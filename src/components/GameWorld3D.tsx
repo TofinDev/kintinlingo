@@ -79,27 +79,25 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
   const [webglError, setWebglError] = useState(false);
 
   const islands = useMemo<IslandMeta[]>(() => {
-    const lessonIslands: IslandMeta[] = grade.lessons.map((lesson, i) => ({
-      id: lesson.id,
-      labelTh: lesson.titleTh,
-      subLabel: `บทที่ ${i + 1} • ${lesson.words.length} คำ`,
-      emoji: lesson.icon,
-      colorHex: i === 0 ? 0x38bdf8 : 0x34d399,
-      position: [i === 0 ? -3.1 : -1.0, i === 0 ? 0.25 : -0.15, i === 0 ? 0.6 : -0.8],
-      stars: progress.completedLessons[lesson.id] ?? 0,
-      action: { kind: 'lesson', lesson },
-    }));
-
-    const arcadeIslands: IslandMeta[] = [
+    const lessonColors = [0x38bdf8, 0x34d399, 0x818cf8, 0xf472b6, 0x2dd4bf, 0x60a5fa];
+    const rawList: Omit<IslandMeta, 'position'>[] = [
+      ...grade.lessons.map((lesson, i) => ({
+        id: lesson.id,
+        labelTh: lesson.titleTh,
+        subLabel: `บทที่ ${i + 1} • ${lesson.words.length} คำ`,
+        emoji: lesson.icon,
+        colorHex: lessonColors[i % lessonColors.length],
+        stars: progress.completedLessons[lesson.id] ?? 0,
+        action: { kind: 'lesson' as const, lesson },
+      })),
       {
         id: 'memory',
         labelTh: 'เกาะจับคู่การ์ด',
         subLabel: '🃏 Memory Match',
         emoji: '🃏',
         colorHex: 0xa855f7,
-        position: [1.3, 0.35, -0.5],
         stars: 0,
-        action: { kind: 'memory' },
+        action: { kind: 'memory' as const },
       },
       {
         id: 'speed',
@@ -107,9 +105,8 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
         subLabel: '⏱️ Speed Challenge',
         emoji: '⏱️',
         colorHex: 0xf59e0b,
-        position: [3.25, -0.05, 0.7],
         stars: 0,
-        action: { kind: 'speed' },
+        action: { kind: 'speed' as const },
       },
       {
         id: 'vs',
@@ -117,13 +114,23 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
         subLabel: '⚔️ แข่งกับเพื่อน/ออนไลน์',
         emoji: '⚔️',
         colorHex: 0xf43f5e,
-        position: [0.3, 0.55, 1.9],
         stars: 0,
-        action: { kind: 'vs' },
+        action: { kind: 'vs' as const },
       },
     ];
 
-    return [...lessonIslands, ...arcadeIslands];
+    const count = rawList.length;
+    const radius = 3.85;
+    return rawList.map((item, idx) => {
+      const angle = (idx / count) * Math.PI * 2 - Math.PI / 2;
+      const x = Number((Math.cos(angle) * radius).toFixed(2));
+      const z = Number((Math.sin(angle) * (radius * 0.78)).toFixed(2));
+      const y = Number((Math.sin(idx * 1.4) * 0.35).toFixed(2));
+      return {
+        ...item,
+        position: [x, y, z],
+      };
+    });
   }, [grade, progress.completedLessons]);
 
   const selectedIsland = useMemo(
@@ -646,7 +653,14 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
                     />
                   ))}
                   <span className="ml-1 text-xs font-semibold text-slate-500">
-                    ({selectedIsland.action.lesson.words.map((w) => w.word).join(', ')})
+                    ({selectedIsland.action.lesson.words
+                      .slice(0, 8)
+                      .map((w) => w.word)
+                      .join(', ')}
+                    {selectedIsland.action.lesson.words.length > 8
+                      ? ` ... +อีก ${selectedIsland.action.lesson.words.length - 8} คำ`
+                      : ''}
+                    )
                   </span>
                 </div>
               )}

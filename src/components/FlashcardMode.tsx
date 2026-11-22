@@ -56,23 +56,34 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
         <div className="w-16" />
       </div>
 
-      {/* Progress Dots */}
-      <div className="mb-6 flex justify-center gap-2">
-        {lesson.words.map((w, i) => (
-          <button
-            key={w.id}
-            onClick={() => setIndex(i)}
-            className={`h-2.5 rounded-full transition-all ${
-              i === index
-                ? 'w-8 bg-indigo-600'
-                : i < index
-                  ? 'w-2.5 bg-emerald-400'
-                  : 'w-2.5 bg-slate-200'
-            }`}
-            aria-label={`คำที่ ${i + 1}`}
-          />
-        ))}
-      </div>
+      {/* Progress Bar / Dots */}
+      {lesson.words.length <= 12 ? (
+        <div className="mb-6 flex justify-center gap-2">
+          {lesson.words.map((w, i) => (
+            <button
+              key={w.id}
+              onClick={() => setIndex(i)}
+              className={`h-2.5 rounded-full transition-all ${
+                i === index
+                  ? 'w-8 bg-indigo-600'
+                  : i < index
+                    ? 'w-2.5 bg-emerald-400'
+                    : 'w-2.5 bg-slate-200'
+              }`}
+              aria-label={`คำที่ ${i + 1}`}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="mb-6">
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/80 shadow-inner">
+            <div
+              className="h-full rounded-full bg-indigo-600 transition-all duration-300"
+              style={{ width: `${((index + 1) / lesson.words.length) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Main Flashcard */}
       <div

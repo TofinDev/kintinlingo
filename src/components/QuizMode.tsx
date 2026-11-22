@@ -42,8 +42,9 @@ function buildQuestions(
   ageGroup: AgeGroup
 ): QuizQuestion[] {
   const pool = words.length >= 4 ? words : [...words, ...fallbackPool.filter((f) => !words.some((w) => w.id === f.id))];
+  const roundWords = shuffle(words).slice(0, 10);
 
-  return shuffle(words).map((word, idx) => {
+  return roundWords.map((word, idx) => {
     const distractors = shuffle(pool.filter((w) => w.id !== word.id)).slice(0, 3);
     const choices = shuffle([word, ...distractors]);
 
