@@ -6,7 +6,7 @@ interface ShareQrModalProps {
   onClose: () => void;
 }
 
-const LIVE_URL = 'https://kintinlingo.vercel.app/';
+const LIVE_URL = 'https://kintinvocab.vercel.app/';
 
 export const ShareQrModal: React.FC<ShareQrModalProps> = ({ onClose }) => {
   const [copied, setCopied] = useState(false);
