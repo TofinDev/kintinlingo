@@ -10,6 +10,7 @@ import { QuizMode } from './components/QuizMode';
 import { AvatarDisplay } from './components/AvatarDisplay';
 import { Background3D } from './components/Background3D';
 import { VoiceSelectorModal } from './components/VoiceSelectorModal';
+import { LeaderboardModal } from './components/LeaderboardModal';
 import {
   getPresetLabel,
   getVoiceSettings,
@@ -17,7 +18,7 @@ import {
   saveVoiceSettings,
   type VoiceSettings,
 } from './utils/speech';
-import { GraduationCap, LogOut, Star, Volume2 } from 'lucide-react';
+import { GraduationCap, LogOut, Star, Trophy, Volume2 } from 'lucide-react';
 
 type ViewMode = 'login' | 'grade_select' | 'map' | 'learn' | 'quiz' | 'review';
 
@@ -29,6 +30,7 @@ export function App() {
   const [enteringPlayer, setEnteringPlayer] = useState<PlayerProfile | null>(null);
   const [voiceSettings, setVoiceSettings] = useState<VoiceSettings>(() => getVoiceSettings());
   const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   const handleVoiceChange = (next: VoiceSettings) => {
     setVoiceSettings(next);
@@ -199,6 +201,16 @@ export function App() {
           </button>
 
           <div className="flex flex-wrap items-center justify-end gap-2">
+            {/* Leaderboard Button */}
+            <button
+              onClick={() => setShowLeaderboard(true)}
+              className="flex items-center gap-1.5 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 shadow-xs transition hover:bg-amber-100 sm:text-sm"
+              title="ดูอันดับคะแนนผู้เล่น"
+            >
+              <Trophy className="h-4 w-4 text-amber-500" />
+              <span className="hidden sm:inline">อันดับ</span>
+            </button>
+
             {/* Voice Selector Button (always accessible) */}
             <button
               onClick={() => setShowVoiceModal(true)}
@@ -269,6 +281,15 @@ export function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Leaderboard Modal */}
+      {showLeaderboard && (
+        <LeaderboardModal
+          players={players}
+          activePlayerId={activePlayerId}
+          onClose={() => setShowLeaderboard(false)}
+        />
       )}
 
       {/* Voice Selector Modal */}
