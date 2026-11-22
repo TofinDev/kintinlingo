@@ -33,7 +33,7 @@ export const ShareQrModal: React.FC<ShareQrModalProps> = ({ onClose }) => {
     const dataUrl = canvas.toDataURL('image/png');
     const a = document.createElement('a');
     a.href = dataUrl;
-    a.download = 'kintin-word-qrcode.png';
+    a.download = 'kintin-vocab-qrcode.png';
     a.click();
   };
 
@@ -73,7 +73,7 @@ export const ShareQrModal: React.FC<ShareQrModalProps> = ({ onClose }) => {
             level="H"
             includeMargin={false}
           />
-          <div className="font-en mt-3 text-sm font-bold text-indigo-600">Kintin Word</div>
+          <div className="font-en mt-3 text-sm font-bold text-indigo-600">Kintin Vocab</div>
         </div>
 
         {/* Clickable Link */}
