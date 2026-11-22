@@ -278,12 +278,12 @@ export const QuizMode: React.FC<QuizModeProps> = ({
             <span className="inline-block rounded-full bg-pink-100 px-3 py-1 text-xs font-bold text-pink-700">
               🎧 ฟังเสียงแล้วเลือกรูปที่ถูกต้อง
             </span>
-            <div className="my-5">
+            <div className="my-3 sm:my-5">
               <button
                 onClick={() => speakEnglish(current.word.word, ageGroup)}
-                className="inline-flex w-full items-center justify-center gap-3 rounded-3xl bg-indigo-600 px-10 py-5 text-xl font-bold text-white shadow-lg transition hover:bg-indigo-700 active:scale-95 sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2.5 whitespace-nowrap rounded-2xl bg-indigo-600 px-6 py-3.5 text-lg font-bold text-white shadow-lg transition hover:bg-indigo-700 active:scale-95 sm:w-auto sm:rounded-3xl sm:px-10 sm:py-5 sm:text-xl"
               >
-                <Volume2 className="h-8 w-8" />
+                <Volume2 className="h-6 w-6 sm:h-8 sm:w-8" />
                 กดฟังเสียงคำศัพท์
               </button>
             </div>
