@@ -68,6 +68,8 @@ const EggGachaModal = lazy(() =>
   import('./components/EggGachaModal').then((m) => ({ default: m.EggGachaModal }))
 );
 
+const APP_VERSION = 'v1.5.0';
+
 type ViewMode =
   | 'login'
   | 'grade_select'
@@ -377,8 +379,13 @@ export function App() {
               <GraduationCap className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
             <div>
-              <div className="font-en whitespace-nowrap text-base font-bold leading-tight text-slate-900 sm:text-lg">
-                Kintin <span className="text-indigo-600">Vocab</span>
+              <div className="font-en flex items-center gap-1.5 whitespace-nowrap text-base font-bold leading-tight text-slate-900 sm:text-lg">
+                <span>
+                  Kintin <span className="text-indigo-600">Vocab</span>
+                </span>
+                <span className="rounded-md bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700">
+                  {APP_VERSION}
+                </span>
               </div>
               <div className="hidden text-[11px] font-medium text-slate-500 md:block">
                 ภาษาอังกฤษ อ.1 – ป.6
