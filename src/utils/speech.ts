@@ -1,90 +1,139 @@
 import type { AgeGroup } from '../types';
 
-let cachedVoice: SpeechSynthesisVoice | null = null;
+const VOICE_SETTINGS_KEY = 'kintin_lingo_voice_settings_v1';
 
-function isChildOrFemaleVoice(name: string): number {
-  const lower = name.toLowerCase();
-  // Highest priority: real neural child voice (e.g. Microsoft Ana Online on Edge/Windows)
-  if (lower.includes('ana') || lower.includes('child') || lower.includes('kid')) return 4;
-  // Next: Google female voices in Chrome
-  if (lower.includes('google uk english female') || lower.includes('google us english')) return 3;
-  // Next: Natural / Online female voices
-  if (
-    (lower.includes('natural') || lower.includes('online')) &&
-    !/\bmale\b/.test(lower)
-  ) {
-    return 2;
+export type VoicePreset = 'kid' | 'female' | 'male' | 'custom';
+
+export interface VoiceSettings {
+  preset: VoicePreset;
+  customVoiceName?: string;
+}
+
+let cachedVoices: SpeechSynthesisVoice[] = [];
+
+function refreshVoices(): SpeechSynthesisVoice[] {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return [];
+  cachedVoices = window.speechSynthesis.getVoices().filter((v) => v.lang.startsWith('en'));
+  return cachedVoices;
+}
+
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  refreshVoices();
+  window.speechSynthesis.addEventListener('voiceschanged', refreshVoices);
+}
+
+export function getAvailableEnglishVoices(): SpeechSynthesisVoice[] {
+  return cachedVoices.length > 0 ? cachedVoices : refreshVoices();
+}
+
+export function getVoiceSettings(): VoiceSettings {
+  try {
+    const raw = localStorage.getItem(VOICE_SETTINGS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<VoiceSettings>;
+      if (parsed.preset) {
+        return {
+          preset: parsed.preset,
+          customVoiceName: parsed.customVoiceName,
+        };
+      }
+    }
+  } catch {
+    // ignore
   }
-  // Standard female voices
-  const femaleKeywords = [
-    'female',
-    'aria',
-    'jenny',
-    'sonia',
-    'libby',
-    'clara',
-    'michelle',
-    'ava',
-    'emma',
-    'zira',
-    'hazel',
-    'susan',
-    'samantha',
-    'karen',
-    'victoria',
-  ];
-  if (femaleKeywords.some((kw) => lower.includes(kw))) return 1;
+  return { preset: 'kid' };
+}
+
+export function saveVoiceSettings(settings: VoiceSettings): void {
+  try {
+    localStorage.setItem(VOICE_SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    // ignore
+  }
+}
+
+function scoreVoiceForPreset(name: string, preset: 'kid' | 'female' | 'male'): number {
+  const lower = name.toLowerCase();
+  const isMale = /\bmale\b/.test(lower) || ['david', 'mark', 'george', 'ryan', 'guy', 'daniel'].some((k) => lower.includes(k));
+  const isNatural = lower.includes('natural') || lower.includes('online') || lower.includes('google');
+
+  if (preset === 'male') {
+    if (isMale && isNatural) return 4;
+    if (isMale) return 3;
+    return 0;
+  }
+
+  if (preset === 'kid') {
+    if (lower.includes('ana') || lower.includes('child') || lower.includes('kid')) return 5;
+  }
+
+  // kid or female
+  if (lower.includes('google uk english female') || lower.includes('google us english')) return 4;
+  if (!isMale && isNatural) return 3;
+  if (!isMale) return 2;
   return 0;
 }
 
-function pickBestKidEnglishVoice(): SpeechSynthesisVoice | null {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
-  const voices = window.speechSynthesis.getVoices();
+function pickVoice(settings: VoiceSettings): SpeechSynthesisVoice | null {
+  const voices = getAvailableEnglishVoices();
   if (!voices.length) return null;
 
-  const enVoices = voices.filter((v) => v.lang.startsWith('en'));
-  if (!enVoices.length) return null;
+  if (settings.preset === 'custom' && settings.customVoiceName) {
+    const exact = voices.find((v) => v.name === settings.customVoiceName);
+    if (exact) return exact;
+  }
 
-  const sorted = [...enVoices].sort(
-    (a, b) => isChildOrFemaleVoice(b.name) - isChildOrFemaleVoice(a.name)
+  const targetPreset = settings.preset === 'custom' ? 'female' : settings.preset;
+  const sorted = [...voices].sort(
+    (a, b) => scoreVoiceForPreset(b.name, targetPreset) - scoreVoiceForPreset(a.name, targetPreset)
   );
   return sorted[0];
 }
 
-if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-  cachedVoice = pickBestKidEnglishVoice();
-  window.speechSynthesis.addEventListener('voiceschanged', () => {
-    cachedVoice = pickBestKidEnglishVoice();
-  });
+export function getPresetLabel(settings: VoiceSettings): string {
+  switch (settings.preset) {
+    case 'kid':
+      return '👧 เสียงเด็ก';
+    case 'female':
+      return '👩 เสียงผู้หญิง';
+    case 'male':
+      return '👨 เสียงผู้ชาย';
+    case 'custom':
+      return '🎙️ กำหนดเอง';
+  }
 }
 
-export function getActiveVoiceName(): string {
-  const voice = cachedVoice ?? pickBestKidEnglishVoice();
-  return voice ? voice.name : 'Kid Voice (Default)';
-}
-
-export function speakEnglish(text: string, ageGroup: AgeGroup = 'lower_primary'): void {
+export function speakEnglish(
+  text: string,
+  ageGroup: AgeGroup = 'lower_primary',
+  overrideSettings?: VoiceSettings
+): void {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 
   window.speechSynthesis.cancel();
+  const settings = overrideSettings ?? getVoiceSettings();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'en-US';
 
-  const voice = cachedVoice ?? pickBestKidEnglishVoice();
+  const voice = pickVoice(settings);
   if (voice) {
-    cachedVoice = voice;
     utterance.voice = voice;
   }
 
-  // If the OS/browser already provides a native child voice (like Microsoft Ana), keep pitch natural (1.05).
-  // Otherwise raise pitch gently to 1.32 for a cheerful, natural kid-like voice.
   const isNativeChild =
     voice &&
     (voice.name.toLowerCase().includes('ana') ||
       voice.name.toLowerCase().includes('child') ||
       voice.name.toLowerCase().includes('kid'));
 
-  utterance.pitch = isNativeChild ? 1.05 : 1.32;
+  if (settings.preset === 'kid') {
+    utterance.pitch = isNativeChild ? 1.05 : 1.32;
+  } else if (settings.preset === 'male') {
+    utterance.pitch = 0.92;
+  } else {
+    utterance.pitch = 1.0;
+  }
+
   utterance.rate = ageGroup === 'kindergarten' ? 0.92 : ageGroup === 'lower_primary' ? 0.97 : 1.0;
 
   window.speechSynthesis.speak(utterance);

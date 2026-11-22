@@ -9,8 +9,15 @@ import { FlashcardMode } from './components/FlashcardMode';
 import { QuizMode } from './components/QuizMode';
 import { AvatarDisplay } from './components/AvatarDisplay';
 import { Background3D } from './components/Background3D';
-import { playTone } from './utils/speech';
-import { GraduationCap, LogOut, Star } from 'lucide-react';
+import { VoiceSelectorModal } from './components/VoiceSelectorModal';
+import {
+  getPresetLabel,
+  getVoiceSettings,
+  playTone,
+  saveVoiceSettings,
+  type VoiceSettings,
+} from './utils/speech';
+import { GraduationCap, LogOut, Star, Volume2 } from 'lucide-react';
 
 type ViewMode = 'login' | 'grade_select' | 'map' | 'learn' | 'quiz' | 'review';
 
@@ -20,6 +27,13 @@ export function App() {
   const [view, setView] = useState<ViewMode>('login');
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [enteringPlayer, setEnteringPlayer] = useState<PlayerProfile | null>(null);
+  const [voiceSettings, setVoiceSettings] = useState<VoiceSettings>(() => getVoiceSettings());
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+
+  const handleVoiceChange = (next: VoiceSettings) => {
+    setVoiceSettings(next);
+    saveVoiceSettings(next);
+  };
 
   useEffect(() => {
     savePlayers(players);
@@ -184,42 +198,54 @@ export function App() {
             </div>
           </button>
 
-          {activePlayer && progress && (
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {/* Active Player + Switch Player */}
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 sm:text-sm"
-                title="เปลี่ยนผู้เล่น / ออกจากระบบ"
-              >
-                <AvatarDisplay
-                  avatar={progress.avatar || activePlayer.avatar}
-                  alt={activePlayer.name}
-                  className="h-6 w-6 rounded-lg"
-                  emojiClassName="text-base"
-                />
-                <span className="max-w-[90px] truncate sm:max-w-[140px]">
-                  {activePlayer.name}
-                </span>
-                <LogOut className="h-3.5 w-3.5 text-slate-400" />
-              </button>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {/* Voice Selector Button (always accessible) */}
+            <button
+              onClick={() => setShowVoiceModal(true)}
+              className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs transition hover:border-indigo-300 hover:bg-indigo-50 sm:text-sm"
+              title="เลือกเสียงอ่าน"
+            >
+              <Volume2 className="h-4 w-4 text-indigo-600" />
+              <span className="hidden sm:inline">{getPresetLabel(voiceSettings)}</span>
+            </button>
 
-              {/* Grade Switcher */}
-              <button
-                onClick={() => setView('grade_select')}
-                className="rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100 sm:text-sm"
-                title="คลิกเพื่อเปลี่ยนระดับชั้น"
-              >
-                {currentGrade.shortName}
-              </button>
+            {activePlayer && progress && (
+              <>
+                {/* Active Player + Switch Player */}
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 sm:text-sm"
+                  title="เปลี่ยนผู้เล่น / ออกจากระบบ"
+                >
+                  <AvatarDisplay
+                    avatar={progress.avatar || activePlayer.avatar}
+                    alt={activePlayer.name}
+                    className="h-6 w-6 rounded-lg"
+                    emojiClassName="text-base"
+                  />
+                  <span className="max-w-[90px] truncate sm:max-w-[140px]">
+                    {activePlayer.name}
+                  </span>
+                  <LogOut className="h-3.5 w-3.5 text-slate-400" />
+                </button>
 
-              {/* Stars Counter */}
-              <div className="flex items-center gap-1 rounded-2xl bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 ring-1 ring-amber-200 sm:text-sm">
-                <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
-                <span>{progress.stars}</span>
-              </div>
-            </div>
-          )}
+                {/* Grade Switcher */}
+                <button
+                  onClick={() => setView('grade_select')}
+                  className="rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100 sm:text-sm"
+                  title="คลิกเพื่อเปลี่ยนระดับชั้น"
+                >
+                  {currentGrade.shortName}
+                </button>
+
+                {/* Stars Counter */}
+                <div className="flex items-center gap-1 rounded-2xl bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 ring-1 ring-amber-200 sm:text-sm">
+                  <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
+                  <span>{progress.stars}</span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -243,6 +269,16 @@ export function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Voice Selector Modal */}
+      {showVoiceModal && (
+        <VoiceSelectorModal
+          settings={voiceSettings}
+          ageGroup={activePlayer ? currentGrade.ageGroup : 'kindergarten'}
+          onChange={handleVoiceChange}
+          onClose={() => setShowVoiceModal(false)}
+        />
       )}
 
       {/* Main Content */}
