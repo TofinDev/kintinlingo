@@ -4,7 +4,6 @@ import type { GradeId, Lesson, PlayerProfile, UserProgress, VocabWord } from './
 import { createNewPlayer, loadPlayers, savePlayers } from './utils/storage';
 import { PlayerLogin } from './components/PlayerLogin';
 import { GradeSelector } from './components/GradeSelector';
-import { LessonMap } from './components/LessonMap';
 import { AvatarDisplay } from './components/AvatarDisplay';
 import { GameLoader } from './components/GameLoader';
 import {
@@ -18,6 +17,9 @@ import { BarChart3, GraduationCap, LogOut, QrCode, Star, Trophy, Volume2 } from 
 
 const Background3D = lazy(() =>
   import('./components/Background3D').then((m) => ({ default: m.Background3D }))
+);
+const GameWorld3D = lazy(() =>
+  import('./components/GameWorld3D').then((m) => ({ default: m.GameWorld3D }))
 );
 const FlashcardMode = lazy(() =>
   import('./components/FlashcardMode').then((m) => ({ default: m.FlashcardMode }))
@@ -417,7 +419,7 @@ export function App() {
           )}
 
           {activePlayer && progress && view === 'map' && (
-            <LessonMap
+            <GameWorld3D
               grade={currentGrade}
               progress={progress}
               onStartLearn={(lesson) => {
