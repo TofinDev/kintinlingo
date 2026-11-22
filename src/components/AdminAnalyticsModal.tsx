@@ -59,7 +59,7 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
         // ignore
       }
     } else {
-      setPinError('รหัสผ่าน Admin ไม่ถูกต้อง (ค่าเริ่มต้น: 1234)');
+      setPinError('รหัสผ่าน Admin ไม่ถูกต้อง');
     }
   };
 
@@ -208,7 +208,7 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
           </div>
           <h2 className="text-xl font-bold text-slate-900">Admin Analytics</h2>
           <p className="mt-1 text-xs text-slate-500">
-            กรอกรหัสผ่านผู้ดูแลระบบเพื่อดูสถิติและจัดการข้อมูล (รหัสเริ่มต้น: 1234)
+            กรอกรหัสผ่านผู้ดูแลระบบเพื่อดูสถิติและจัดการข้อมูล
           </p>
 
           <form onSubmit={handleUnlock} className="mt-5 space-y-4">

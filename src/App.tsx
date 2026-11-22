@@ -20,7 +20,7 @@ import {
   saveVoiceSettings,
   type VoiceSettings,
 } from './utils/speech';
-import { BarChart3, GraduationCap, LogOut, QrCode, ShieldCheck, Star, Trophy, Users, Volume2 } from 'lucide-react';
+import { BarChart3, GraduationCap, LogOut, QrCode, Star, Trophy, Users, Volume2 } from 'lucide-react';
 
 const Background3D = lazy(() =>
   import('./components/Background3D').then((m) => ({ default: m.Background3D }))
@@ -388,16 +388,6 @@ export function App() {
               </>
             )}
 
-            {/* Admin Analytics Button */}
-            <button
-              onClick={() => setShowAdminModal(true)}
-              className="flex items-center gap-1.5 rounded-2xl border border-slate-300 bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 sm:text-sm"
-              title="หน้าสถิติสำหรับผู้ดูแลระบบ (Admin Analytics)"
-            >
-              <ShieldCheck className="h-4 w-4 text-emerald-400" />
-              <span className="hidden sm:inline">Admin</span>
-            </button>
-
             {/* QR Code Share Button */}
             <button
               onClick={() => setShowQrModal(true)}
@@ -515,7 +505,12 @@ export function App() {
             players={players}
             onRefreshFromCloud={refreshFromCloud}
             onDeletePlayer={handleDeletePlayer}
-            onClose={() => setShowAdminModal(false)}
+            onClose={() => {
+              setShowAdminModal(false);
+              if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
+                window.history.replaceState({}, '', '/');
+              }
+            }}
           />
         )}
 
