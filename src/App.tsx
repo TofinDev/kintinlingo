@@ -11,6 +11,7 @@ import { AvatarDisplay } from './components/AvatarDisplay';
 import { Background3D } from './components/Background3D';
 import { VoiceSelectorModal } from './components/VoiceSelectorModal';
 import { LeaderboardModal } from './components/LeaderboardModal';
+import { VocabAnalysisModal } from './components/VocabAnalysisModal';
 import {
   getPresetLabel,
   getVoiceSettings,
@@ -18,7 +19,7 @@ import {
   saveVoiceSettings,
   type VoiceSettings,
 } from './utils/speech';
-import { GraduationCap, LogOut, Star, Trophy, Volume2 } from 'lucide-react';
+import { BarChart3, GraduationCap, LogOut, Star, Trophy, Volume2 } from 'lucide-react';
 
 type ViewMode = 'login' | 'grade_select' | 'map' | 'learn' | 'quiz' | 'review';
 
@@ -31,6 +32,7 @@ export function App() {
   const [voiceSettings, setVoiceSettings] = useState<VoiceSettings>(() => getVoiceSettings());
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false);
 
   const handleVoiceChange = (next: VoiceSettings) => {
     setVoiceSettings(next);
@@ -211,6 +213,18 @@ export function App() {
               <span className="hidden sm:inline">อันดับ</span>
             </button>
 
+            {/* Vocab Analysis Button (when logged in) */}
+            {activePlayer && (
+              <button
+                onClick={() => setShowAnalysis(true)}
+                className="flex items-center gap-1.5 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 shadow-xs transition hover:bg-indigo-100 sm:text-sm"
+                title="วิเคราะห์แนวคำศัพท์และหมวดที่ควรเพิ่ม"
+              >
+                <BarChart3 className="h-4 w-4 text-indigo-600" />
+                <span className="hidden sm:inline">วิเคราะห์</span>
+              </button>
+            )}
+
             {/* Voice Selector Button (always accessible) */}
             <button
               onClick={() => setShowVoiceModal(true)}
@@ -281,6 +295,19 @@ export function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Vocab Analysis Modal */}
+      {showAnalysis && activePlayer && (
+        <VocabAnalysisModal
+          player={activePlayer}
+          currentGrade={currentGrade}
+          onSelectLesson={(lesson) => {
+            setActiveLesson(lesson);
+            setView('learn');
+          }}
+          onClose={() => setShowAnalysis(false)}
+        />
       )}
 
       {/* Leaderboard Modal */}
