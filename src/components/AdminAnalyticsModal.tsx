@@ -25,8 +25,8 @@ interface AdminAnalyticsModalProps {
   onClose: () => void;
 }
 
-const ADMIN_PIN_KEY = 'kintin_lingo_admin_unlocked_v1';
-const DEFAULT_ADMIN_PIN = '1234';
+const ADMIN_PIN_KEY = 'kintin_lingo_admin_unlocked_v2';
+const DEFAULT_ADMIN_PIN = '150632';
 
 export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
   players,
