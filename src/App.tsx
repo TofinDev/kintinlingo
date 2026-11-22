@@ -13,6 +13,7 @@ import { PlayerLogin } from './components/PlayerLogin';
 import { GradeSelector } from './components/GradeSelector';
 import { AvatarDisplay } from './components/AvatarDisplay';
 import { GameLoader } from './components/GameLoader';
+import { IntroVideoModal } from './components/IntroVideoModal';
 import {
   getPresetLabel,
   getVoiceSettings,
@@ -87,6 +88,7 @@ export function App() {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [showIntroVideo, setShowIntroVideo] = useState(true);
   const [showAdminModal, setShowAdminModal] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return (
@@ -325,6 +327,10 @@ export function App() {
 
   return (
     <div className="relative min-h-screen bg-transparent pb-12">
+      {showIntroVideo && !showAdminModal && (
+        <IntroVideoModal onFinish={() => setShowIntroVideo(false)} />
+      )}
+
       <Suspense fallback={null}>
         <Background3D
           ageGroup={activePlayer ? currentGrade.ageGroup : 'kindergarten'}
