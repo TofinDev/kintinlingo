@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import type { GradeLevel, Lesson, UserProgress } from '../types';
-import { BookOpen, Gamepad2, RotateCcw, Star, Swords, Timer } from 'lucide-react';
+import { playTone } from '../utils/speech';
+import { BookOpen, Gamepad2, RotateCcw, Sparkles, Star, Swords, Timer } from 'lucide-react';
 
 export type IslandAction =
   | { kind: 'lesson'; lesson: Lesson }
@@ -32,6 +33,35 @@ interface IslandMeta {
   action: IslandAction;
 }
 
+function createLabelSprite(emoji: string, text: string): THREE.Sprite {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 160;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    // Glowing pill background
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+    ctx.beginPath();
+    ctx.roundRect(24, 24, 464, 112, 56);
+    ctx.fill();
+
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(129, 140, 248, 0.9)';
+    ctx.stroke();
+
+    ctx.font = 'bold 46px "Prompt", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`${emoji} ${text}`, 256, 82);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(2.3, 0.72, 1);
+  return sprite;
+}
+
 export const GameWorld3D: React.FC<GameWorld3DProps> = ({
   grade,
   progress,
@@ -55,7 +85,7 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
       subLabel: `บทที่ ${i + 1} • ${lesson.words.length} คำ`,
       emoji: lesson.icon,
       colorHex: i === 0 ? 0x38bdf8 : 0x34d399,
-      position: [i === 0 ? -3.0 : -0.9, i === 0 ? 0.2 : -0.2, i === 0 ? 0.6 : -0.8],
+      position: [i === 0 ? -3.1 : -1.0, i === 0 ? 0.25 : -0.15, i === 0 ? 0.6 : -0.8],
       stars: progress.completedLessons[lesson.id] ?? 0,
       action: { kind: 'lesson', lesson },
     }));
@@ -67,7 +97,7 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
         subLabel: '🃏 Memory Match',
         emoji: '🃏',
         colorHex: 0xa855f7,
-        position: [1.3, 0.35, -0.4],
+        position: [1.3, 0.35, -0.5],
         stars: 0,
         action: { kind: 'memory' },
       },
@@ -77,7 +107,7 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
         subLabel: '⏱️ Speed Challenge',
         emoji: '⏱️',
         colorHex: 0xf59e0b,
-        position: [3.2, -0.1, 0.7],
+        position: [3.25, -0.05, 0.7],
         stars: 0,
         action: { kind: 'speed' },
       },
@@ -101,9 +131,30 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
     [islands, selectedId]
   );
 
-  // Keep refs updated for Three.js loop
+  // Refs for Three.js loop
   const selectedIdRef = useRef(selectedId);
-  selectedIdRef.current = selectedId;
+  const prevSelectedPosRef = useRef<THREE.Vector3>(
+    new THREE.Vector3(...(islands[0]?.position ?? [0, 0, 0]))
+  );
+  const targetSelectedPosRef = useRef<THREE.Vector3>(
+    new THREE.Vector3(...(islands[0]?.position ?? [0, 0, 0]))
+  );
+  const jumpProgressRef = useRef<number>(1);
+
+  useEffect(() => {
+    if (selectedIdRef.current !== selectedId) {
+      const prevIsl = islands.find((i) => i.id === selectedIdRef.current);
+      const nextIsl = islands.find((i) => i.id === selectedId);
+      if (prevIsl && nextIsl) {
+        prevSelectedPosRef.current.set(...prevIsl.position);
+        targetSelectedPosRef.current.set(...nextIsl.position);
+        jumpProgressRef.current = 0;
+        playTone('correct');
+      }
+      selectedIdRef.current = selectedId;
+    }
+  }, [selectedId, islands]);
+
   const hoveredIdRef = useRef(hoveredId);
   hoveredIdRef.current = hoveredId;
 
@@ -120,41 +171,61 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
     }
 
     const width = container.clientWidth || 720;
-    const height = container.clientHeight || 380;
+    const height = container.clientHeight || 400;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(width, height);
     container.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(44, width / height, 0.1, 100);
-    camera.position.set(0, 4.6, 8.6);
-    camera.lookAt(0, 0, 0.3);
+    camera.position.set(0, 4.8, 8.8);
+    camera.lookAt(0, 0.2, 0.2);
 
-    // Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-    const sun = new THREE.DirectionalLight(0xfffbeb, 1.25);
-    sun.position.set(6, 10, 6);
+    // Futuristic Lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.95));
+    const sun = new THREE.DirectionalLight(0xfffbeb, 1.35);
+    sun.position.set(6, 12, 7);
     scene.add(sun);
-    const fill = new THREE.DirectionalLight(0xc7d2fe, 0.55);
-    fill.position.set(-6, 4, -5);
-    scene.add(fill);
+    const rim = new THREE.DirectionalLight(0x38bdf8, 0.8);
+    rim.position.set(-7, 5, -6);
+    scene.add(rim);
 
     // World Group (rotatable by drag)
     const world = new THREE.Group();
     scene.add(world);
 
-    // Connecting glowing path tubes between islands
+    // Outer Holographic Compass Ring around the whole map
+    const compassRing = new THREE.Mesh(
+      new THREE.TorusGeometry(4.9, 0.03, 12, 96),
+      new THREE.MeshBasicMaterial({ color: 0x818cf8, transparent: true, opacity: 0.35 })
+    );
+    compassRing.rotation.x = Math.PI / 2;
+    compassRing.position.y = -0.5;
+    world.add(compassRing);
+
+    // Connecting glowing laser path tubes + moving energy pulses
     const pathPoints = islands.map((i) => new THREE.Vector3(...i.position));
+    let curve: THREE.CatmullRomCurve3 | null = null;
+    const energyOrbs: THREE.Mesh[] = [];
+
     if (pathPoints.length >= 2) {
-      const curve = new THREE.CatmullRomCurve3(pathPoints);
-      const tubeGeo = new THREE.TubeGeometry(curve, 48, 0.06, 8, false);
+      curve = new THREE.CatmullRomCurve3(pathPoints);
+      const tubeGeo = new THREE.TubeGeometry(curve, 64, 0.055, 10, false);
       const tubeMat = new THREE.MeshStandardMaterial({
-        color: 0xfef08a,
-        emissive: 0xfacc15,
-        emissiveIntensity: 0.35,
-        roughness: 0.3,
+        color: 0x38bdf8,
+        emissive: 0x6366f1,
+        emissiveIntensity: 0.6,
+        roughness: 0.2,
       });
       world.add(new THREE.Mesh(tubeGeo, tubeMat));
+
+      const orbGeo = new THREE.SphereGeometry(0.11, 12, 12);
+      const orbMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+      for (let i = 0; i < 4; i++) {
+        const orb = new THREE.Mesh(orbGeo, orbMat);
+        world.add(orb);
+        energyOrbs.push(orb);
+      }
     }
 
     // Build each 3D Floating Island
@@ -163,35 +234,57 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
       group: THREE.Group;
       beacon: THREE.Mesh;
       ring: THREE.Mesh;
+      outerRing: THREE.Mesh;
+      beam: THREE.Mesh;
       baseY: number;
       hitMeshes: THREE.Object3D[];
     }[] = [];
 
-    const earthMat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.8 });
+    const crystalBaseMat = new THREE.MeshStandardMaterial({
+      color: 0x312e81,
+      emissive: 0x1e1b4b,
+      emissiveIntensity: 0.3,
+      roughness: 0.35,
+      metalness: 0.3,
+    });
     const goldMat = new THREE.MeshStandardMaterial({
       color: 0xfbbf24,
       emissive: 0xf59e0b,
-      emissiveIntensity: 0.25,
-      metalness: 0.4,
-      roughness: 0.2,
+      emissiveIntensity: 0.4,
+      metalness: 0.5,
+      roughness: 0.15,
     });
 
     islands.forEach((isl, idx) => {
       const g = new THREE.Group();
       g.position.set(...isl.position);
 
-      // Grassy top disc
-      const topGeo = new THREE.CylinderGeometry(0.95, 0.88, 0.28, 24);
-      const topMat = new THREE.MeshStandardMaterial({ color: isl.colorHex, roughness: 0.4 });
+      // Hexagonal futuristic platform top
+      const topGeo = new THREE.CylinderGeometry(1.02, 0.92, 0.3, 8);
+      const topMat = new THREE.MeshStandardMaterial({
+        color: isl.colorHex,
+        emissive: isl.colorHex,
+        emissiveIntensity: 0.15,
+        roughness: 0.3,
+        metalness: 0.15,
+      });
       const topMesh = new THREE.Mesh(topGeo, topMat);
       topMesh.userData.islandId = isl.id;
       g.add(topMesh);
 
-      // Rocky underside cone
-      const baseGeo = new THREE.ConeGeometry(0.86, 0.9, 12);
-      const baseMesh = new THREE.Mesh(baseGeo, earthMat);
+      // Glowing rim band
+      const bandGeo = new THREE.CylinderGeometry(1.04, 1.04, 0.07, 8);
+      const bandMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const bandMesh = new THREE.Mesh(bandGeo, bandMat);
+      bandMesh.position.y = 0.02;
+      bandMesh.userData.islandId = isl.id;
+      g.add(bandMesh);
+
+      // Low-poly crystal underside
+      const baseGeo = new THREE.ConeGeometry(0.88, 1.05, 8);
+      const baseMesh = new THREE.Mesh(baseGeo, crystalBaseMat);
       baseMesh.rotation.x = Math.PI;
-      baseMesh.position.y = -0.58;
+      baseMesh.position.y = -0.65;
       baseMesh.userData.islandId = isl.id;
       g.add(baseMesh);
 
@@ -200,28 +293,57 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
       const beaconMat = new THREE.MeshStandardMaterial({
         color: 0xffffff,
         emissive: isl.colorHex,
-        emissiveIntensity: 0.45,
-        roughness: 0.15,
-        metalness: 0.2,
+        emissiveIntensity: 0.65,
+        roughness: 0.1,
+        metalness: 0.3,
       });
       const beacon = new THREE.Mesh(beaconGeo, beaconMat);
-      beacon.position.y = 0.65;
+      beacon.position.y = 0.68;
       beacon.userData.islandId = isl.id;
       g.add(beacon);
 
-      // Selection Ring
-      const ringGeo = new THREE.TorusGeometry(1.08, 0.05, 12, 36);
+      // Vertical Holo Energy Beam (visible when selected)
+      const beamGeo = new THREE.CylinderGeometry(0.45, 0.75, 2.6, 16, 1, true);
+      const beamMat = new THREE.MeshBasicMaterial({
+        color: isl.colorHex,
+        transparent: true,
+        opacity: 0.18,
+        side: THREE.DoubleSide,
+      });
+      const beam = new THREE.Mesh(beamGeo, beamMat);
+      beam.position.y = 1.3;
+      g.add(beam);
+
+      // Inner Selection Ring
+      const ringGeo = new THREE.TorusGeometry(1.15, 0.045, 12, 36);
       const ringMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.rotation.x = Math.PI / 2;
-      ring.position.y = 0.15;
+      ring.position.y = 0.16;
       g.add(ring);
+
+      // Outer Tilted Gyro Ring
+      const outerRingGeo = new THREE.TorusGeometry(1.32, 0.025, 10, 36);
+      const outerRingMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.75,
+      });
+      const outerRing = new THREE.Mesh(outerRingGeo, outerRingMat);
+      outerRing.rotation.x = Math.PI / 2.3;
+      outerRing.position.y = 0.25;
+      g.add(outerRing);
+
+      // 3D Floating Label Sprite above island
+      const labelSprite = createLabelSprite(isl.emoji, isl.labelTh);
+      labelSprite.position.set(0, 1.55, 0);
+      g.add(labelSprite);
 
       // Orbiting earned stars
       for (let s = 0; s < isl.stars; s++) {
-        const starMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.11, 0), goldMat);
+        const starMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.12, 0), goldMat);
         const angle = (s / 3) * Math.PI * 2;
-        starMesh.position.set(Math.cos(angle) * 0.65, 0.88, Math.sin(angle) * 0.65);
+        starMesh.position.set(Math.cos(angle) * 0.7, 0.92, Math.sin(angle) * 0.7);
         g.add(starMesh);
       }
 
@@ -231,10 +353,47 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
         group: g,
         beacon,
         ring,
+        outerRing,
+        beam,
         baseY: isl.position[1] + idx * 0.001,
-        hitMeshes: [topMesh, baseMesh, beacon],
+        hitMeshes: [topMesh, bandMesh, baseMesh, beacon],
       });
     });
+
+    // 3D Cyber-Explorer Mascot that jumps from island to island!
+    const explorer = new THREE.Group();
+    const expMat = new THREE.MeshStandardMaterial({
+      color: 0xfef08a,
+      emissive: 0xf59e0b,
+      emissiveIntensity: 0.35,
+      roughness: 0.2,
+      metalness: 0.4,
+    });
+    const expVisorMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+
+    const expBody = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.2, 8, 16), expMat);
+    expBody.position.y = 0.28;
+    explorer.add(expBody);
+
+    const expHead = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), expMat);
+    expHead.position.y = 0.62;
+    explorer.add(expHead);
+
+    const expVisor = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.1, 0.14), expVisorMat);
+    expVisor.position.set(0, 0.63, 0.14);
+    explorer.add(expVisor);
+
+    const initialIsl = islands.find((i) => i.id === selectedIdRef.current) ?? islands[0];
+    if (initialIsl) {
+      explorer.position.set(
+        initialIsl.position[0] + 0.42,
+        initialIsl.position[1] + 0.25,
+        initialIsl.position[2] + 0.35
+      );
+      prevSelectedPosRef.current.set(...initialIsl.position);
+      targetSelectedPosRef.current.set(...initialIsl.position);
+    }
+    world.add(explorer);
 
     // Raycaster & Drag Orbit
     const raycaster = new THREE.Raycaster();
@@ -268,7 +427,7 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
         const dx = e.clientX - lastX;
         dragDist += Math.abs(dx);
         lastX = e.clientX;
-        targetWorldRotY += dx * 0.006;
+        targetWorldRotY += dx * 0.0065;
       } else {
         const hit = getHitIsland(e.clientX, e.clientY);
         setHoveredId(hit);
@@ -294,7 +453,7 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
     const handleResize = () => {
       if (!container) return;
       const w = container.clientWidth || 720;
-      const h = container.clientHeight || 380;
+      const h = container.clientHeight || 400;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
@@ -309,22 +468,60 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
       const t = clock.getElapsedTime();
 
       world.rotation.y += (targetWorldRotY - world.rotation.y) * 0.08;
+      compassRing.rotation.z = t * 0.15;
+
+      // Animate energy pulses along connecting tube
+      if (curve && energyOrbs.length > 0) {
+        energyOrbs.forEach((orb, idx) => {
+          const u = (t * 0.22 + idx / energyOrbs.length) % 1;
+          const pt = curve!.getPointAt(u);
+          orb.position.copy(pt);
+        });
+      }
 
       islandGroups.forEach((ig, idx) => {
         const isSel = ig.id === selectedIdRef.current;
         const isHov = ig.id === hoveredIdRef.current;
 
         ig.group.position.y =
-          ig.baseY + Math.sin(t * 1.8 + idx) * 0.09 + (isSel ? 0.22 : 0);
+          ig.baseY + Math.sin(t * 2.0 + idx) * 0.09 + (isSel ? 0.25 : 0);
 
-        const targetScale = isSel ? 1.18 : isHov ? 1.08 : 1.0;
+        const targetScale = isSel ? 1.2 : isHov ? 1.09 : 1.0;
         ig.group.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.12);
 
-        ig.beacon.rotation.y = t * (isSel ? 2.6 : 1.2);
-        ig.beacon.position.y = 0.65 + Math.sin(t * 2.5 + idx) * 0.08;
+        ig.beacon.rotation.y = t * (isSel ? 3.0 : 1.2);
+        ig.beacon.rotation.x = Math.sin(t * 2 + idx) * 0.25;
+        ig.beacon.position.y = 0.68 + Math.sin(t * 2.8 + idx) * 0.08;
+
         ig.ring.visible = isSel || isHov;
-        ig.ring.rotation.z = t * 1.2;
+        ig.ring.rotation.z = t * 1.5;
+
+        ig.outerRing.visible = isSel;
+        ig.outerRing.rotation.y = -t * 2.2;
+        ig.outerRing.rotation.z = t * 1.4;
+
+        ig.beam.visible = isSel;
       });
+
+      // Animate 3D Explorer jumping between islands
+      if (jumpProgressRef.current < 1) {
+        jumpProgressRef.current = Math.min(1, jumpProgressRef.current + 0.032);
+      }
+      const jp = jumpProgressRef.current;
+      const lerped = new THREE.Vector3().lerpVectors(
+        prevSelectedPosRef.current,
+        targetSelectedPosRef.current,
+        jp
+      );
+      const jumpArc = Math.sin(jp * Math.PI) * 1.65;
+      const idleBounce = jp >= 1 ? Math.abs(Math.sin(t * 4.5)) * 0.14 : 0;
+
+      explorer.position.set(
+        lerped.x + 0.44,
+        lerped.y + 0.25 + jumpArc + idleBounce,
+        lerped.z + 0.36
+      );
+      explorer.rotation.y = jp < 1 ? jp * Math.PI * 4 : Math.sin(t * 2) * 0.35;
 
       renderer.render(scene, camera);
     };
@@ -361,8 +558,9 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
             {grade.badgeEmoji}
           </div>
           <div>
-            <div className="text-base font-bold text-slate-900 sm:text-lg">
-              โลกผจญภัย {grade.nameTh}
+            <div className="flex items-center gap-1.5 text-base font-bold text-slate-900 sm:text-lg">
+              <span>จักรวาล 3D {grade.nameTh}</span>
+              <Sparkles className="h-4 w-4 text-amber-500" />
             </div>
             <div className="text-xs font-semibold text-slate-500">
               จำได้แล้ว {learnedInGrade}/{totalWordsInGrade} คำ • เป้าหมาย {grade.targetVocab}
@@ -391,15 +589,15 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
 
       {/* 3D Interactive World Canvas */}
       {!webglError && (
-        <div className="relative mb-5 overflow-hidden rounded-3xl border-2 border-white/80 bg-gradient-to-b from-sky-200/70 via-indigo-100/60 to-emerald-100/70 shadow-xl backdrop-blur-sm">
-          <div className="pointer-events-none absolute top-3 left-4 z-10 rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-indigo-700 shadow-xs">
-            🏝️ แตะที่เกาะ 3D หรือลากเพื่อหมุนแผนที่
+        <div className="relative mb-5 overflow-hidden rounded-3xl border-2 border-indigo-300/80 bg-gradient-to-b from-slate-900/85 via-indigo-950/80 to-purple-950/80 shadow-2xl backdrop-blur-md">
+          <div className="pointer-events-none absolute top-3 left-4 z-10 rounded-full bg-white/90 px-3.5 py-1 text-xs font-bold text-indigo-700 shadow-sm">
+            🛸 แตะที่เกาะ 3D เพื่อให้หุ่นยนต์กระโดดไป หรือลากเพื่อหมุนมุมกล้อง 360°
           </div>
-          <div ref={mountRef} className="h-[310px] w-full sm:h-[370px]" />
+          <div ref={mountRef} className="h-[330px] w-full sm:h-[390px]" />
         </div>
       )}
 
-      {/* Quick Island Selector Pills (for accessibility & mobile) */}
+      {/* Quick Island Selector Pills */}
       <div className="mb-5 flex flex-wrap justify-center gap-2">
         {islands.map((isl) => {
           const active = isl.id === selectedIsland.id;
@@ -409,7 +607,7 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
               onClick={() => setSelectedId(isl.id)}
               className={`inline-flex items-center gap-1.5 rounded-2xl border-b-4 px-3.5 py-2 text-xs font-bold transition active:translate-y-0.5 active:border-b-0 sm:text-sm ${
                 active
-                  ? 'border-indigo-700 bg-indigo-600 text-white shadow-md'
+                  ? 'border-indigo-700 bg-indigo-600 text-white shadow-md scale-105'
                   : 'border-slate-300 bg-white/90 text-slate-700 hover:bg-white'
               }`}
             >
@@ -421,11 +619,14 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
       </div>
 
       {/* Selected Island Action Card (3D Game Console Panel) */}
-      <div className="animate-card-pop rounded-3xl border-2 border-white bg-white/95 p-6 shadow-xl backdrop-blur-md">
+      <div
+        key={selectedIsland.id}
+        className="animate-card-pop rounded-3xl border-2 border-white bg-white/95 p-6 shadow-xl backdrop-blur-md"
+      >
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-4 text-center sm:text-left">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-4xl shadow-inner">
-              {selectedIsland.emoji}
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 text-4xl shadow-inner ring-2 ring-indigo-200/60">
+              <span className="animate-bounce-soft">{selectedIsland.emoji}</span>
             </div>
             <div>
               <div className="text-xs font-bold uppercase tracking-wider text-indigo-500">

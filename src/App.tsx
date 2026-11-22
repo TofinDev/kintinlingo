@@ -317,7 +317,10 @@ export function App() {
   return (
     <div className="relative min-h-screen bg-transparent pb-12">
       <Suspense fallback={null}>
-        <Background3D ageGroup={activePlayer ? currentGrade.ageGroup : 'kindergarten'} />
+        <Background3D
+          ageGroup={activePlayer ? currentGrade.ageGroup : 'kindergarten'}
+          viewKey={view}
+        />
       </Suspense>
 
       {/* Global Header */}

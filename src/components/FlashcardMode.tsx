@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { AgeGroup, Lesson } from '../types';
 import { speakEnglish } from '../utils/speech';
+import { HoloStage3D } from './HoloStage3D';
 import { ArrowLeft, ArrowRight, CheckCircle2, Gamepad2, Volume2 } from 'lucide-react';
 
 interface FlashcardModeProps {
@@ -76,20 +77,16 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
       {/* Main Flashcard */}
       <div
         key={word.id}
-        className="animate-card-pop rounded-3xl border-2 border-slate-200 bg-white p-6 text-center shadow-lg sm:p-10"
+        className="animate-card-pop rounded-3xl border-2 border-slate-200 bg-white/95 p-6 text-center shadow-xl backdrop-blur-md sm:p-10"
       >
-        <button
-          type="button"
-          onClick={() => speakEnglish(word.word, ageGroup)}
-          className="group relative mx-auto mb-5 flex h-44 w-44 cursor-pointer flex-col items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-50 via-sky-50 to-pink-50 shadow-inner ring-2 ring-indigo-100 transition hover:scale-105 hover:ring-indigo-300 active:scale-95 sm:h-52 sm:w-52"
-          title="แตะที่รูปเพื่อฟังเสียง"
-        >
-          <span className="animate-bounce-soft text-8xl sm:text-9xl">{word.emoji}</span>
-          <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-0.5 text-[11px] font-bold text-indigo-600 shadow-sm">
-            <Volume2 className="h-3.5 w-3.5" />
-            แตะรูปฟังเสียง
-          </span>
-        </button>
+        <HoloStage3D
+          emoji={word.emoji}
+          onTap={() => speakEnglish(word.word, ageGroup)}
+        />
+        <div className="mb-3 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-600">
+          <Volume2 className="h-3.5 w-3.5" />
+          แตะโฮโลแกรม 3D เพื่อหมุน & ฟังเสียง
+        </div>
 
         {!isKindergarten && (
           <span className="mb-2 inline-block rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
