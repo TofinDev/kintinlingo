@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
 import type { AgeGroup, VocabWord } from '../types';
 import { playTone, speakEnglish } from '../utils/speech';
+import { WordPicture } from './HoloStage3D';
 import { ArrowLeft, RotateCcw, Star } from 'lucide-react';
 
 interface MemoryCard {
@@ -73,7 +74,7 @@ export const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
     const nextFlipped = [...flipped, idx];
     setFlipped(nextFlipped);
 
-    if (card.kind === 'word') {
+    if (card.kind === 'word' || ageGroup === 'kindergarten') {
       speakEnglish(card.wordObj.word, ageGroup);
     }
 
@@ -194,8 +195,12 @@ export const MemoryMatchGame: React.FC<MemoryMatchGameProps> = ({
               }`}
             >
               {isOpen ? (
-                card.kind === 'emoji' ? (
-                  <span className="text-5xl sm:text-6xl">{card.content}</span>
+                card.kind === 'emoji' || ageGroup === 'kindergarten' ? (
+                  <WordPicture
+                    word={card.wordObj.word}
+                    emoji={card.wordObj.emoji}
+                    size="sm"
+                  />
                 ) : (
                   <span className="font-en text-lg font-bold text-slate-900 sm:text-xl">
                     {card.content}

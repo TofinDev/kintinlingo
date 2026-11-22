@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import confetti from 'canvas-confetti';
 import type { AgeGroup, VocabWord } from '../types';
 import { playTone, speakEnglish } from '../utils/speech';
+import { WordPicture } from './HoloStage3D';
 import { ArrowLeft, CheckCircle2, RotateCcw, Star, Volume2, XCircle } from 'lucide-react';
 
 type QuestionType = 'listen_pick' | 'meaning_pick' | 'spell' | 'sentence';
@@ -53,7 +54,8 @@ function buildQuestions(
     const canSpell = /^[a-zA-Z]+$/.test(cleanWord) && cleanWord.length <= 10;
 
     if (ageGroup === 'kindergarten') {
-      type = idx % 2 === 0 ? 'listen_pick' : 'meaning_pick';
+      // Kindergarten (อ.1 - อ.3): 100% Listen to audio & pick the matching picture (no text reading required)
+      type = 'listen_pick';
     } else if (ageGroup === 'lower_primary') {
       if (idx % 3 === 2 && canSpell) type = 'spell';
       else type = idx % 2 === 0 ? 'listen_pick' : 'meaning_pick';
@@ -305,7 +307,7 @@ export const QuizMode: React.FC<QuizModeProps> = ({
                     disabled={status !== 'idle'}
                     className={`animate-stagger-up flex flex-col items-center justify-center rounded-2xl border-2 p-5 transition active:scale-95 ${style}`}
                   >
-                    <span className="text-5xl sm:text-6xl">{c.emoji}</span>
+                    <WordPicture word={c.word} emoji={c.emoji} size="md" />
                     {ageGroup !== 'kindergarten' && (
                       <span className="font-en mt-2 text-sm font-semibold text-slate-600">
                         {c.thai}

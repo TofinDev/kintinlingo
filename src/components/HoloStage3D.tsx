@@ -189,6 +189,54 @@ function renderCustomSvg(wordLower: string): React.ReactNode | null {
   return null;
 }
 
+export interface WordPictureProps {
+  word?: string;
+  emoji: string;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+export const WordPicture: React.FC<WordPictureProps> = ({
+  word = '',
+  emoji,
+  size = 'md',
+}) => {
+  const [imgError, setImgError] = useState(false);
+  const wordLower = word.trim().toLowerCase();
+  const customSvg = useMemo(() => renderCustomSvg(wordLower), [wordLower]);
+  const twemojiUrl = useMemo(() => emojiToTwemojiUrl(emoji), [emoji]);
+
+  const sizeClass =
+    size === 'sm'
+      ? 'h-16 w-16 text-5xl'
+      : size === 'lg'
+        ? 'h-28 w-28 text-7xl sm:h-32 sm:w-32 sm:text-8xl'
+        : 'h-20 w-20 text-6xl sm:h-24 sm:w-24';
+
+  if (customSvg) {
+    return (
+      <div className={`flex items-center justify-center overflow-hidden ${sizeClass}`}>
+        <div className={size === 'sm' ? 'scale-50' : size === 'md' ? 'scale-75' : 'scale-100'}>
+          {customSvg}
+        </div>
+      </div>
+    );
+  }
+
+  if (twemojiUrl && !imgError) {
+    return (
+      <img
+        src={twemojiUrl}
+        alt={word || emoji}
+        onError={() => setImgError(true)}
+        className={`object-contain drop-shadow-md ${sizeClass}`}
+        draggable={false}
+      />
+    );
+  }
+
+  return <span className={sizeClass}>{emoji}</span>;
+};
+
 export const HoloStage3D: React.FC<HoloStage3DProps> = ({ word = '', emoji, onTap }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const pulseRef = useRef<number>(1);

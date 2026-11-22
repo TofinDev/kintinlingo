@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import confetti from 'canvas-confetti';
 import type { AgeGroup, VocabWord } from '../types';
 import { playTone, speakEnglish } from '../utils/speech';
+import { WordPicture } from './HoloStage3D';
 import { ArrowLeft, Flame, RotateCcw, Star, Timer, Volume2 } from 'lucide-react';
 
 interface SpeedGameProps {
@@ -215,8 +216,10 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({
               onClick={() => handlePick(c)}
               className="flex flex-col items-center justify-center rounded-2xl border-2 border-slate-200 bg-slate-50 p-5 transition hover:border-indigo-400 hover:bg-indigo-50/50 active:scale-95"
             >
-              <span className="text-5xl sm:text-6xl">{c.emoji}</span>
-              <span className="mt-2 text-sm font-bold text-slate-700">{c.thai}</span>
+              <WordPicture word={c.word} emoji={c.emoji} size="md" />
+              {ageGroup !== 'kindergarten' && (
+                <span className="mt-2 text-sm font-bold text-slate-700">{c.thai}</span>
+              )}
             </button>
           ))}
         </div>
