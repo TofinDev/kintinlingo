@@ -86,7 +86,7 @@ export const PlayerLogin: React.FC<PlayerLoginProps> = ({
       <div className="mb-8 text-center">
         <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-indigo-100 px-4 py-1.5 text-sm font-bold text-indigo-700">
           <Sparkles className="h-4 w-4" />
-          ยินดีต้อนรับสู่ Kintin Lingo
+          ยินดีต้อนรับสู่ Kintin Kids
         </div>
         <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">
           วันนี้ใครมาเรียนเอ่ย?

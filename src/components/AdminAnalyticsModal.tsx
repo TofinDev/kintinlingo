@@ -194,7 +194,7 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `kintin-lingo-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `kintin-kids-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -255,7 +255,7 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
-                Kintin Lingo — Admin Analytics
+                Kintin Kids — Admin Analytics
               </h2>
               <p className="text-xs text-slate-500">
                 แดชบอร์ดวิเคราะห์ผลการเรียนรู้ของผู้เล่นทั้งหมด อ.1 – ป.6
