@@ -286,7 +286,7 @@ export const QuizMode: React.FC<QuizModeProps> = ({
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3.5">
-              {current.choices.map((c) => {
+              {current.choices.map((c, idx) => {
                 const isSelected = selectedChoiceId === c.id;
                 const isAnswer = c.id === current.word.id;
                 let style = 'border-slate-200 bg-slate-50 hover:border-indigo-300 hover:bg-indigo-50/40';
@@ -299,9 +299,10 @@ export const QuizMode: React.FC<QuizModeProps> = ({
                 return (
                   <button
                     key={c.id}
+                    style={{ '--stagger': idx } as React.CSSProperties}
                     onClick={() => handleChoice(c)}
                     disabled={status !== 'idle'}
-                    className={`flex flex-col items-center justify-center rounded-2xl border-2 p-5 transition ${style}`}
+                    className={`animate-stagger-up flex flex-col items-center justify-center rounded-2xl border-2 p-5 transition active:scale-95 ${style}`}
                   >
                     <span className="text-5xl sm:text-6xl">{c.emoji}</span>
                     {ageGroup !== 'kindergarten' && (
@@ -345,7 +346,7 @@ export const QuizMode: React.FC<QuizModeProps> = ({
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {current.choices.map((c) => {
+              {current.choices.map((c, idx) => {
                 const isSelected = selectedChoiceId === c.id;
                 const isAnswer = c.id === current.word.id;
                 let style = 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/40';
@@ -358,9 +359,10 @@ export const QuizMode: React.FC<QuizModeProps> = ({
                 return (
                   <button
                     key={c.id}
+                    style={{ '--stagger': idx } as React.CSSProperties}
                     onClick={() => handleChoice(c)}
                     disabled={status !== 'idle'}
-                    className={`rounded-2xl border-2 px-4 py-4 text-lg font-bold transition sm:text-xl ${style}`}
+                    className={`animate-stagger-up rounded-2xl border-2 px-4 py-4 text-lg font-bold transition active:scale-95 sm:text-xl ${style}`}
                   >
                     {c.thai}
                   </button>

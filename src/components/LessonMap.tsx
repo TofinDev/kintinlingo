@@ -139,7 +139,8 @@ export const LessonMap: React.FC<LessonMapProps> = ({
             return (
               <div
                 key={lesson.id}
-                className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md"
+                style={{ '--stagger': idx + 1 } as React.CSSProperties}
+                className="animate-stagger-up flex flex-col justify-between rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">

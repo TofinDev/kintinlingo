@@ -133,13 +133,14 @@ export const GradeSelector: React.FC<GradeSelectorProps> = ({
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                {grades.map((grade) => {
+                {grades.map((grade, idx) => {
                   const isSelected = grade.id === selectedGrade;
                   return (
                     <button
                       key={grade.id}
+                      style={{ '--stagger': idx } as React.CSSProperties}
                       onClick={() => onSelectGrade(grade.id)}
-                      className={`group relative flex flex-col justify-between rounded-3xl border-2 p-5 text-left transition-all hover:-translate-y-1 hover:shadow-lg ${
+                      className={`animate-stagger-up group relative flex flex-col justify-between rounded-3xl border-2 p-5 text-left transition-all hover:-translate-y-1 hover:shadow-lg active:scale-95 ${
                         isSelected
                           ? 'border-indigo-500 bg-white shadow-md ring-4 ring-indigo-100'
                           : 'border-slate-200 bg-white hover:border-indigo-300'

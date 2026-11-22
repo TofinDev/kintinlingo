@@ -100,7 +100,7 @@ export const PlayerLogin: React.FC<PlayerLoginProps> = ({
       {!showCreate && (
         <div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {players.map((player) => {
+            {players.map((player, idx) => {
               const gradeInfo =
                 CURRICULUM.find((g) => g.id === player.progress.selectedGrade) ?? CURRICULUM[0];
               const isConfirmingDelete = confirmDeleteId === player.id;
@@ -108,7 +108,8 @@ export const PlayerLogin: React.FC<PlayerLoginProps> = ({
               return (
                 <div
                   key={player.id}
-                  className="group relative flex flex-col justify-between rounded-3xl border-2 border-slate-200 bg-white/95 p-5 shadow-sm transition hover:-translate-y-1 hover:border-indigo-400 hover:shadow-lg active:scale-95"
+                  style={{ '--stagger': idx } as React.CSSProperties}
+                  className="animate-stagger-up group relative flex flex-col justify-between rounded-3xl border-2 border-slate-200 bg-white/95 p-5 shadow-sm transition hover:-translate-y-1 hover:border-indigo-400 hover:shadow-lg active:scale-95"
                 >
                   {/* Delete button */}
                   {!isConfirmingDelete ? (
@@ -197,8 +198,9 @@ export const PlayerLogin: React.FC<PlayerLoginProps> = ({
             {/* Add New Player Card */}
             <button
               type="button"
+              style={{ '--stagger': players.length } as React.CSSProperties}
               onClick={() => setShowCreate(true)}
-              className="flex min-h-[168px] flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-indigo-300 bg-indigo-50/60 p-6 text-indigo-700 transition hover:border-indigo-500 hover:bg-indigo-50"
+              className="animate-stagger-up flex min-h-[168px] flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-indigo-300 bg-indigo-50/60 p-6 text-indigo-700 transition hover:-translate-y-1 hover:border-indigo-500 hover:bg-indigo-50 active:scale-95"
             >
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-sm">
                 <Plus className="h-7 w-7" />
