@@ -204,7 +204,7 @@ export const VsBattleMode: React.FC<VsBattleModeProps> = ({
     const base =
       typeof window !== 'undefined' && !window.location.hostname.includes('localhost')
         ? `${window.location.origin}/`
-        : 'https://kintinlingo.vercel.app/';
+        : 'https://kintinvocab.vercel.app/';
     const code = encodeVsChallenge({
       name: currentPlayer.name,
       avatar: currentPlayer.progress.avatar || currentPlayer.avatar,
