@@ -64,6 +64,9 @@ import { decodeFriendInvite } from './components/FriendsModal';
 const AdminAnalyticsModal = lazy(() =>
   import('./components/AdminAnalyticsModal').then((m) => ({ default: m.AdminAnalyticsModal }))
 );
+const EggGachaModal = lazy(() =>
+  import('./components/EggGachaModal').then((m) => ({ default: m.EggGachaModal }))
+);
 
 type ViewMode =
   | 'login'
@@ -88,6 +91,8 @@ export function App() {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [showEggModal, setShowEggModal] = useState(false);
+  const [freeEggSpins, setFreeEggSpins] = useState(1);
   const [showIntroVideo, setShowIntroVideo] = useState(true);
   const [showAdminModal, setShowAdminModal] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -250,6 +255,7 @@ export function App() {
     lessonId: string | null,
     result: { starsEarned: number; correctIds: string[]; wrongIds: string[] }
   ) => {
+    setFreeEggSpins((s) => s + 1);
     updateActiveProgress((prev) => {
       const nextLearned = Array.from(
         new Set([...prev.learnedWords, ...result.correctIds])
@@ -280,11 +286,33 @@ export function App() {
 
   const handleArcadeComplete = useCallback(
     (starsEarned: number, learnedIds: string[]) => {
+      setFreeEggSpins((s) => s + 1);
       updateActiveProgress((prev) => ({
         ...prev,
         stars: prev.stars + starsEarned,
         learnedWords: Array.from(new Set([...prev.learnedWords, ...learnedIds])),
       }));
+    },
+    [updateActiveProgress]
+  );
+
+  const handleHatchEgg = useCallback(
+    (res: { egg: { id: string }; usedFreeSpin: boolean; netStarsDelta: number }) => {
+      if (res.usedFreeSpin) {
+        setFreeEggSpins((s) => Math.max(0, s - 1));
+      }
+      updateActiveProgress((prev) => {
+        const eggKey = `__egg_${res.egg.id}`;
+        const prevCount = prev.completedLessons[eggKey] ?? 0;
+        return {
+          ...prev,
+          stars: Math.max(0, prev.stars + res.netStarsDelta),
+          completedLessons: {
+            ...prev.completedLessons,
+            [eggKey]: prevCount + 1,
+          },
+        };
+      });
     },
     [updateActiveProgress]
   );
@@ -449,6 +477,20 @@ export function App() {
                   {currentGrade.shortName}
                 </button>
 
+                <button
+                  onClick={() => setShowEggModal(true)}
+                  className="relative flex items-center gap-1 rounded-xl border border-rose-200 bg-gradient-to-r from-amber-50 to-rose-50 px-2 py-1 text-xs font-bold text-rose-700 shadow-xs transition hover:from-amber-100 hover:to-rose-100 sm:rounded-2xl sm:px-3 sm:py-1.5 sm:text-sm"
+                  title="สุ่มไข่วิเศษ & สัตว์ในตำนาน"
+                >
+                  <span>🥚</span>
+                  <span className="hidden md:inline">สุ่มไข่</span>
+                  {freeEggSpins > 0 && (
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                      {freeEggSpins}
+                    </span>
+                  )}
+                </button>
+
                 <div className="flex items-center gap-1 rounded-xl bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200 sm:rounded-2xl sm:px-3 sm:py-1.5 sm:text-sm">
                   <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500 sm:h-4 sm:w-4" />
                   <span>{progress.stars}</span>
@@ -513,6 +555,16 @@ export function App() {
         )}
 
         {showQrModal && <ShareQrModal onClose={() => setShowQrModal(false)} />}
+
+        {showEggModal && activePlayer && (
+          <EggGachaModal
+            player={activePlayer}
+            freeSpins={freeEggSpins}
+            onHatchEgg={handleHatchEgg}
+            onEquipAvatar={handleSelectAvatar}
+            onClose={() => setShowEggModal(false)}
+          />
+        )}
 
         {showAdminModal && (
           <AdminAnalyticsModal

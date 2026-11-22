@@ -183,7 +183,7 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
         p.progress.stars,
         p.progress.learnedWords.length,
         p.progress.wrongWords.length,
-        Object.keys(p.progress.completedLessons).length,
+        Object.keys(p.progress.completedLessons).filter((k) => !k.startsWith('__egg_')).length,
         (p.friends ?? []).length,
         p.createdAt,
       ].join(',');
