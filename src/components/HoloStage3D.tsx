@@ -43,9 +43,9 @@ const NUMBER_VALUE_MAP: Record<string, number> = {
   twenty: 20,
 };
 
-function emojiToTwemojiUrl(emoji: string): string | null {
+export function getEmojiCdnUrls(emoji: string): string[] {
   const trimmed = emoji.trim();
-  if (!trimmed) return null;
+  if (!trimmed) return [];
   const codePoints: string[] = [];
   for (const ch of trimmed) {
     const cp = ch.codePointAt(0);
@@ -54,13 +54,23 @@ function emojiToTwemojiUrl(emoji: string): string | null {
     }
   }
   const hasZwj = codePoints.includes('200d');
-  const filtered = hasZwj ? codePoints : codePoints.filter((c) => c !== 'fe0f');
-  if (filtered.length === 0) return null;
-  return `https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/${filtered.join('-')}.svg`;
+  const cleanPoints = hasZwj ? codePoints : codePoints.filter((c) => c !== 'fe0f');
+  if (cleanPoints.length === 0) return [];
+
+  const hyphenHex = cleanPoints.join('-');
+  const underscoreHex = cleanPoints.join('_');
+
+  return [
+    // Tier 1: Microsoft Fluent 3D Emoji (High-gloss 3D WebP)
+    `https://cdn.jsdelivr.net/npm/@lobehub/fluent-emoji-3d@1.1.0/assets/${hyphenHex}.webp`,
+    // Tier 2: Google Noto Animated Emoji (Animated WebP)
+    `https://fonts.gstatic.com/s/e/notoemoji/latest/${underscoreHex}/512.webp`,
+    // Tier 3: Twemoji Vector SVG
+    `https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg/${hyphenHex}.svg`,
+  ];
 }
 
 function renderCustomSvg(wordLower: string): React.ReactNode | null {
-  // 1. Shapes
   if (wordLower === 'triangle') {
     return (
       <svg viewBox="0 0 160 160" className="h-32 w-32 drop-shadow-md sm:h-36 sm:w-36">
@@ -151,7 +161,6 @@ function renderCustomSvg(wordLower: string): React.ReactNode | null {
     );
   }
 
-  // 2. Colors (Paint Splash Illustration)
   const colorObj = COLOR_HEX_MAP[wordLower];
   if (colorObj) {
     return (
@@ -167,7 +176,6 @@ function renderCustomSvg(wordLower: string): React.ReactNode | null {
     );
   }
 
-  // 3. Numbers 1-20
   const numVal = NUMBER_VALUE_MAP[wordLower];
   if (numVal !== undefined) {
     return (
@@ -200,10 +208,14 @@ export const WordPicture: React.FC<WordPictureProps> = ({
   emoji,
   size = 'md',
 }) => {
-  const [imgError, setImgError] = useState(false);
+  const [urlIndex, setUrlIndex] = useState(0);
   const wordLower = word.trim().toLowerCase();
   const customSvg = useMemo(() => renderCustomSvg(wordLower), [wordLower]);
-  const twemojiUrl = useMemo(() => emojiToTwemojiUrl(emoji), [emoji]);
+  const urls = useMemo(() => getEmojiCdnUrls(emoji), [emoji]);
+
+  useEffect(() => {
+    setUrlIndex(0);
+  }, [emoji, word]);
 
   const sizeClass =
     size === 'sm'
@@ -222,13 +234,14 @@ export const WordPicture: React.FC<WordPictureProps> = ({
     );
   }
 
-  if (twemojiUrl && !imgError) {
+  const activeUrl = urls[urlIndex];
+  if (activeUrl) {
     return (
       <img
-        src={twemojiUrl}
+        src={activeUrl}
         alt={word || emoji}
-        onError={() => setImgError(true)}
-        className={`object-contain drop-shadow-md ${sizeClass}`}
+        onError={() => setUrlIndex((i) => i + 1)}
+        className={`animate-bounce-soft object-contain drop-shadow-lg ${sizeClass}`}
         draggable={false}
       />
     );
@@ -240,16 +253,16 @@ export const WordPicture: React.FC<WordPictureProps> = ({
 export const HoloStage3D: React.FC<HoloStage3DProps> = ({ word = '', emoji, onTap }) => {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const pulseRef = useRef<number>(1);
-  const [imgError, setImgError] = useState(false);
+  const [urlIndex, setUrlIndex] = useState(0);
   const [tilt, setTilt] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [bouncing, setBouncing] = useState(false);
 
   const wordLower = word.trim().toLowerCase();
   const customSvg = useMemo(() => renderCustomSvg(wordLower), [wordLower]);
-  const twemojiUrl = useMemo(() => emojiToTwemojiUrl(emoji), [emoji]);
+  const urls = useMemo(() => getEmojiCdnUrls(emoji), [emoji]);
 
   useEffect(() => {
-    setImgError(false);
+    setUrlIndex(0);
     pulseRef.current = 1;
   }, [emoji, word]);
 
@@ -282,7 +295,6 @@ export const HoloStage3D: React.FC<HoloStage3DProps> = ({ word = '', emoji, onTa
     const root = new THREE.Group();
     scene.add(root);
 
-    // 1. 3D Hologram Base Pad
     const baseGeo = new THREE.CylinderGeometry(1.1, 1.28, 0.16, 32);
     const baseMat = new THREE.MeshStandardMaterial({
       color: 0x312e81,
@@ -295,7 +307,6 @@ export const HoloStage3D: React.FC<HoloStage3DProps> = ({ word = '', emoji, onTa
     baseMesh.position.y = -1.22;
     root.add(baseMesh);
 
-    // 2. Counter-Rotating Gyro Energy Rings framing the picture
     const ring1 = new THREE.Mesh(
       new THREE.TorusGeometry(1.32, 0.035, 14, 64),
       new THREE.MeshStandardMaterial({
@@ -318,7 +329,6 @@ export const HoloStage3D: React.FC<HoloStage3DProps> = ({ word = '', emoji, onTa
     ring2.rotation.y = Math.PI / 3;
     root.add(ring2);
 
-    // 3. Orbiting Mini Crystals
     const crystals: THREE.Mesh[] = [];
     const cryGeo = new THREE.OctahedronGeometry(0.11, 0);
     const cryMat = new THREE.MeshStandardMaterial({
@@ -383,34 +393,36 @@ export const HoloStage3D: React.FC<HoloStage3DProps> = ({ word = '', emoji, onTa
     setTilt({ x: -ny * 14, y: nx * 16 });
   };
 
+  const activeUrl = urls[urlIndex];
+
   return (
     <div
       onClick={handleClick}
       onPointerMove={handlePointerMove}
       onPointerLeave={() => setTilt({ x: 0, y: 0 })}
       className="group relative mx-auto mb-3 flex h-[230px] w-[230px] cursor-pointer items-center justify-center select-none"
-      title="แตะที่รูปภาพเพื่อฟังเสียง"
+      title="แตะที่รูปภาพ 3D เพื่อฟังเสียง"
     >
       {/* Background 3D Hologram Rings & Pedestal */}
       <div ref={mountRef} className="pointer-events-none absolute inset-0 h-[230px] w-[230px]" />
 
-      {/* Center Front-Facing Vector Illustration Card */}
+      {/* Center Front-Facing 3D Fluent / Animated Illustration Card */}
       <div
         style={{
           transform: `perspective(600px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(${
             bouncing ? 1.14 : 1
           })`,
         }}
-        className="relative z-10 flex h-40 w-40 items-center justify-center rounded-3xl border-4 border-white bg-gradient-to-br from-white/95 via-indigo-50/90 to-sky-100/90 p-4 shadow-xl transition-transform duration-150 group-hover:scale-105"
+        className="relative z-10 flex h-40 w-40 items-center justify-center rounded-3xl border-4 border-white bg-gradient-to-br from-white/95 via-indigo-50/90 to-sky-100/90 p-3 shadow-xl transition-transform duration-150 group-hover:scale-105"
       >
         {customSvg ? (
           customSvg
-        ) : twemojiUrl && !imgError ? (
+        ) : activeUrl ? (
           <img
-            src={twemojiUrl}
+            src={activeUrl}
             alt={word || emoji}
-            onError={() => setImgError(true)}
-            className="h-28 w-28 object-contain drop-shadow-md sm:h-32 sm:w-32"
+            onError={() => setUrlIndex((i) => i + 1)}
+            className="animate-bounce-soft h-32 w-32 object-contain drop-shadow-xl sm:h-34 sm:w-34"
             draggable={false}
           />
         ) : (

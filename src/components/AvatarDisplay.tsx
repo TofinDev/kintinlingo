@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { getEmojiCdnUrls } from './HoloStage3D';
 
 interface AvatarDisplayProps {
   avatar: string;
@@ -13,14 +14,31 @@ export const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
   className = 'h-12 w-12 rounded-2xl',
   emojiClassName = 'text-2xl',
 }) => {
-  const isImage = avatar.startsWith('data:image') || avatar.startsWith('http');
+  const isUploadedOrHttp = avatar.startsWith('data:image') || avatar.startsWith('http');
+  const [urlIdx, setUrlIdx] = useState(0);
 
-  if (isImage) {
+  const emojiUrls = useMemo(
+    () => (isUploadedOrHttp ? [] : getEmojiCdnUrls(avatar)),
+    [avatar, isUploadedOrHttp]
+  );
+
+  useEffect(() => {
+    setUrlIdx(0);
+  }, [avatar]);
+
+  if (isUploadedOrHttp) {
+    return <img src={avatar} alt={alt} className={`object-cover ${className}`} />;
+  }
+
+  const activeUrl = emojiUrls[urlIdx];
+  if (activeUrl) {
     return (
       <img
-        src={avatar}
+        src={activeUrl}
         alt={alt}
-        className={`object-cover ${className}`}
+        onError={() => setUrlIdx((i) => i + 1)}
+        className={`object-contain p-0.5 drop-shadow-sm ${className}`}
+        draggable={false}
       />
     );
   }

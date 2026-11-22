@@ -69,14 +69,14 @@ export const GradeSelector: React.FC<GradeSelectorProps> = ({
               <button
                 key={av}
                 onClick={() => onSelectAvatar(av)}
-                className={`flex h-12 w-12 items-center justify-center rounded-2xl text-2xl transition-all sm:h-14 sm:w-14 sm:text-3xl ${
+                className={`flex h-12 w-12 items-center justify-center rounded-2xl p-1.5 transition-all sm:h-14 sm:w-14 ${
                   active
                     ? 'scale-110 bg-indigo-600 shadow-md ring-4 ring-indigo-200'
                     : 'bg-slate-100 hover:scale-105 hover:bg-slate-200'
                 }`}
                 aria-label={`เลือกตัวละคร ${av}`}
               >
-                {av}
+                <AvatarDisplay avatar={av} className="h-9 w-9 sm:h-11 sm:w-11" emojiClassName="text-2xl sm:text-3xl" />
               </button>
             );
           })}
@@ -155,9 +155,13 @@ export const GradeSelector: React.FC<GradeSelectorProps> = ({
                       <div>
                         <div className="mb-3 flex items-center gap-3">
                           <div
-                            className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${grade.gradient} text-2xl shadow-sm`}
+                            className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${grade.gradient} p-1.5 shadow-sm`}
                           >
-                            {grade.badgeEmoji}
+                            <AvatarDisplay
+                              avatar={grade.badgeEmoji}
+                              className="h-9 w-9"
+                              emojiClassName="text-2xl"
+                            />
                           </div>
                           <div>
                             <div className="text-lg font-bold text-slate-900">{grade.nameTh}</div>

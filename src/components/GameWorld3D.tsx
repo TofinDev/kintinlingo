@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import type { GradeLevel, Lesson, UserProgress } from '../types';
 import { playTone } from '../utils/speech';
+import { AvatarDisplay } from './AvatarDisplay';
 import { BookOpen, Gamepad2, RotateCcw, Sparkles, Star, Swords, Timer } from 'lucide-react';
 
 export type IslandAction =
@@ -560,9 +561,9 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-3xl border-2 border-white/80 bg-white/85 px-5 py-3.5 shadow-md backdrop-blur-md">
         <div className="flex items-center gap-3">
           <div
-            className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${grade.gradient} text-2xl shadow-sm`}
+            className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${grade.gradient} p-1.5 shadow-sm`}
           >
-            {grade.badgeEmoji}
+            <AvatarDisplay avatar={grade.badgeEmoji} className="h-9 w-9" emojiClassName="text-2xl" />
           </div>
           <div>
             <div className="flex items-center gap-1.5 text-base font-bold text-slate-900 sm:text-lg">
@@ -632,8 +633,12 @@ export const GameWorld3D: React.FC<GameWorld3DProps> = ({
       >
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-4 text-center sm:text-left">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 text-4xl shadow-inner ring-2 ring-indigo-200/60">
-              <span className="animate-bounce-soft">{selectedIsland.emoji}</span>
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 p-2 shadow-inner ring-2 ring-indigo-200/60">
+              <AvatarDisplay
+                avatar={selectedIsland.emoji}
+                className="animate-bounce-soft h-12 w-12"
+                emojiClassName="text-4xl"
+              />
             </div>
             <div>
               <div className="text-xs font-bold uppercase tracking-wider text-indigo-500">

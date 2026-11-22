@@ -267,13 +267,13 @@ export const PlayerLogin: React.FC<PlayerLoginProps> = ({
                     key={av}
                     type="button"
                     onClick={() => setAvatar(av)}
-                    className={`flex h-12 w-12 items-center justify-center rounded-2xl text-2xl transition ${
+                    className={`flex h-12 w-12 items-center justify-center rounded-2xl p-1.5 transition ${
                       avatar === av
                         ? 'scale-110 bg-indigo-600 shadow-md ring-4 ring-indigo-200'
                         : 'bg-slate-100 hover:bg-slate-200'
                     }`}
                   >
-                    {av}
+                    <AvatarDisplay avatar={av} className="h-9 w-9" emojiClassName="text-2xl" />
                   </button>
                 ))}
 
