@@ -20,7 +20,7 @@ import {
   saveVoiceSettings,
   type VoiceSettings,
 } from './utils/speech';
-import { BarChart3, GraduationCap, LogOut, QrCode, Star, Trophy, Users, Volume2 } from 'lucide-react';
+import { BarChart3, GraduationCap, LogOut, QrCode, ShieldCheck, Star, Trophy, Users, Volume2 } from 'lucide-react';
 
 const Background3D = lazy(() =>
   import('./components/Background3D').then((m) => ({ default: m.Background3D }))
@@ -60,6 +60,9 @@ const FriendsModal = lazy(() =>
   import('./components/FriendsModal').then((m) => ({ default: m.FriendsModal }))
 );
 import { decodeFriendInvite } from './components/FriendsModal';
+const AdminAnalyticsModal = lazy(() =>
+  import('./components/AdminAnalyticsModal').then((m) => ({ default: m.AdminAnalyticsModal }))
+);
 
 type ViewMode =
   | 'login'
@@ -84,6 +87,13 @@ export function App() {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      window.location.pathname === '/admin' ||
+      new URLSearchParams(window.location.search).get('admin') === '1'
+    );
+  });
   const [pendingFriendInvite, setPendingFriendInvite] = useState<FriendEntry | null>(() => {
     if (typeof window === 'undefined') return null;
     const fParam = new URLSearchParams(window.location.search).get('addfriend');
@@ -104,27 +114,26 @@ export function App() {
     savePlayers(players);
   }, [players]);
 
+  const refreshFromCloud = useCallback(async () => {
+    const cloudPlayers = await fetchCloudPlayers();
+    if (!cloudPlayers || cloudPlayers.length === 0) return;
+    setPlayers((localPlayers) => {
+      const merged = new Map<string, PlayerProfile>();
+      localPlayers.forEach((p) => merged.set(p.id, p));
+      cloudPlayers.forEach((cp) => {
+        const existing = merged.get(cp.id);
+        if (!existing || cp.progress.stars >= existing.progress.stars) {
+          merged.set(cp.id, cp);
+        }
+      });
+      return Array.from(merged.values());
+    });
+  }, []);
+
   // Fetch players from MySQL backend on startup (if configured)
   useEffect(() => {
-    let mounted = true;
-    fetchCloudPlayers().then((cloudPlayers) => {
-      if (!mounted || !cloudPlayers || cloudPlayers.length === 0) return;
-      setPlayers((localPlayers) => {
-        const merged = new Map<string, PlayerProfile>();
-        localPlayers.forEach((p) => merged.set(p.id, p));
-        cloudPlayers.forEach((cp) => {
-          const existing = merged.get(cp.id);
-          if (!existing || cp.progress.stars >= existing.progress.stars) {
-            merged.set(cp.id, cp);
-          }
-        });
-        return Array.from(merged.values());
-      });
-    });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    void refreshFromCloud();
+  }, [refreshFromCloud]);
 
   const activePlayer = useMemo(
     () => players.find((p) => p.id === activePlayerId) ?? null,
@@ -379,6 +388,16 @@ export function App() {
               </>
             )}
 
+            {/* Admin Analytics Button */}
+            <button
+              onClick={() => setShowAdminModal(true)}
+              className="flex items-center gap-1.5 rounded-2xl border border-slate-300 bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 sm:text-sm"
+              title="หน้าสถิติสำหรับผู้ดูแลระบบ (Admin Analytics)"
+            >
+              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+              <span className="hidden sm:inline">Admin</span>
+            </button>
+
             {/* QR Code Share Button */}
             <button
               onClick={() => setShowQrModal(true)}
@@ -490,6 +509,15 @@ export function App() {
         )}
 
         {showQrModal && <ShareQrModal onClose={() => setShowQrModal(false)} />}
+
+        {showAdminModal && (
+          <AdminAnalyticsModal
+            players={players}
+            onRefreshFromCloud={refreshFromCloud}
+            onDeletePlayer={handleDeletePlayer}
+            onClose={() => setShowAdminModal(false)}
+          />
+        )}
 
         {showFriendsModal && activePlayer && (
           <FriendsModal
