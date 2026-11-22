@@ -43,6 +43,10 @@ const VocabAnalysisModal = lazy(() =>
 const ShareQrModal = lazy(() =>
   import('./components/ShareQrModal').then((m) => ({ default: m.ShareQrModal }))
 );
+const VsBattleMode = lazy(() =>
+  import('./components/VsBattleMode').then((m) => ({ default: m.VsBattleMode }))
+);
+import { decodeVsChallenge, type VsOpponent } from './components/VsBattleMode';
 
 type ViewMode =
   | 'login'
@@ -52,6 +56,7 @@ type ViewMode =
   | 'quiz'
   | 'memory'
   | 'speed'
+  | 'vs'
   | 'review';
 
 export function App() {
@@ -65,6 +70,11 @@ export function App() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [pendingChallenge, setPendingChallenge] = useState<VsOpponent | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const vsParam = new URLSearchParams(window.location.search).get('vs');
+    return vsParam ? decodeVsChallenge(vsParam) : null;
+  });
 
   const handleVoiceChange = (next: VoiceSettings) => {
     setVoiceSettings(next);
@@ -118,7 +128,7 @@ export function App() {
     setEnteringPlayer(player);
     setActivePlayerId(player.id);
     setActiveLesson(null);
-    setView('map');
+    setView(pendingChallenge ? 'vs' : 'map');
     setTimeout(() => {
       setEnteringPlayer(null);
     }, 750);
@@ -420,6 +430,7 @@ export function App() {
               }}
               onStartMemory={() => setView('memory')}
               onStartSpeed={() => setView('speed')}
+              onStartVs={() => setView('vs')}
               onStartReview={() => setView('review')}
               onChangeGrade={() => setView('grade_select')}
             />
@@ -463,6 +474,20 @@ export function App() {
               ageGroup={currentGrade.ageGroup}
               onComplete={handleArcadeComplete}
               onBack={() => setView('map')}
+            />
+          )}
+
+          {activePlayer && progress && view === 'vs' && (
+            <VsBattleMode
+              currentPlayer={activePlayer}
+              allPlayers={players}
+              initialChallenge={pendingChallenge}
+              onClearInitialChallenge={() => setPendingChallenge(null)}
+              onComplete={handleArcadeComplete}
+              onBack={() => {
+                setPendingChallenge(null);
+                setView('map');
+              }}
             />
           )}
 

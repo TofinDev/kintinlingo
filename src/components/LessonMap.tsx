@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
 import type { GradeLevel, Lesson, UserProgress } from '../types';
-import { BookOpen, Gamepad2, RotateCcw, Star, Timer, Trophy, Zap } from 'lucide-react';
+import { BookOpen, Gamepad2, RotateCcw, Star, Swords, Timer, Trophy, Zap } from 'lucide-react';
 
 const Buddy3D = lazy(() =>
   import('./Buddy3D').then((m) => ({ default: m.Buddy3D }))
@@ -13,6 +13,7 @@ interface LessonMapProps {
   onStartQuiz: (lesson: Lesson) => void;
   onStartMemory: () => void;
   onStartSpeed: () => void;
+  onStartVs: () => void;
   onStartReview: () => void;
   onChangeGrade: () => void;
 }
@@ -24,6 +25,7 @@ export const LessonMap: React.FC<LessonMapProps> = ({
   onStartQuiz,
   onStartMemory,
   onStartSpeed,
+  onStartVs,
   onStartReview,
   onChangeGrade,
 }) => {
@@ -108,50 +110,64 @@ export const LessonMap: React.FC<LessonMapProps> = ({
       </div>
 
       {/* Special Arcade Game Modes */}
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <button
           onClick={onStartMemory}
-          className="animate-stagger-up flex items-center justify-between rounded-3xl border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-purple-400 hover:shadow-md active:scale-95"
+          className="animate-stagger-up flex items-center justify-between rounded-3xl border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-purple-400 hover:shadow-md active:scale-95"
         >
-          <div className="flex items-center gap-3.5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-600 text-3xl text-white shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-purple-600 text-2xl text-white shadow-sm">
               🃏
             </div>
             <div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-purple-600">
-                <Zap className="h-3.5 w-3.5" />
-                โหมดเกมส์พิเศษ
+              <div className="flex items-center gap-1 text-[11px] font-bold text-purple-600">
+                <Zap className="h-3 w-3" />
+                เกมส์จับคู่
               </div>
-              <div className="text-lg font-bold text-slate-900">เปิดการ์ดจับคู่</div>
-              <div className="text-xs text-slate-600">จับคู่รูปภาพกับคำศัพท์ {grade.shortName}</div>
+              <div className="text-base font-bold text-slate-900">เปิดการ์ดจับคู่</div>
+              <div className="text-xs text-slate-600">ภาพ ↔ คำศัพท์</div>
             </div>
           </div>
-          <span className="rounded-xl bg-purple-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs">
-            เล่นเลย
-          </span>
         </button>
 
         <button
           onClick={onStartSpeed}
           style={{ '--stagger': 1 } as React.CSSProperties}
-          className="animate-stagger-up flex items-center justify-between rounded-3xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-amber-400 hover:shadow-md active:scale-95"
+          className="animate-stagger-up flex items-center justify-between rounded-3xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-amber-400 hover:shadow-md active:scale-95"
         >
-          <div className="flex items-center gap-3.5">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm">
-              <Timer className="h-7 w-7" />
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm">
+              <Timer className="h-6 w-6" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700">
-                <Zap className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-1 text-[11px] font-bold text-amber-700">
+                <Zap className="h-3 w-3" />
                 โหมดท้าทาย
               </div>
-              <div className="text-lg font-bold text-slate-900">แข่งความเร็ว 60 วิ</div>
-              <div className="text-xs text-slate-600">เก็บคอมโบ x2 x3 ชิงดาวสูงสุด</div>
+              <div className="text-base font-bold text-slate-900">แข่งความเร็ว 60 วิ</div>
+              <div className="text-xs text-slate-600">เก็บคอมโบ x2 x3</div>
             </div>
           </div>
-          <span className="rounded-xl bg-amber-500 px-3.5 py-2 text-xs font-bold text-white shadow-xs">
-            เล่นเลย
-          </span>
+        </button>
+
+        <button
+          onClick={onStartVs}
+          style={{ '--stagger': 2 } as React.CSSProperties}
+          className="animate-stagger-up flex items-center justify-between rounded-3xl border-2 border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 p-4 text-left shadow-sm transition hover:-translate-y-1 hover:border-rose-400 hover:shadow-md active:scale-95"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-500 text-white shadow-sm">
+              <Swords className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1 text-[11px] font-bold text-rose-600">
+                <Zap className="h-3 w-3" />
+                ดวลออนไลน์/เพื่อน
+              </div>
+              <div className="text-base font-bold text-slate-900">ท้าดวลคู่แข่ง</div>
+              <div className="text-xs text-slate-600">เลือกคนแข่ง / ส่งลิงก์</div>
+            </div>
+          </div>
         </button>
       </div>
 
