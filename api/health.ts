@@ -17,8 +17,6 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     return res.status(200).json({
       ok: true,
       configured: true,
-      host: process.env.MYSQL_HOST || '203.170.190.149',
-      database: process.env.MYSQL_DATABASE || 'kintin_lingo',
     });
   } catch (err) {
     return res.status(500).json({

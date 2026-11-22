@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ALL_WORDS_MAP, CURRICULUM } from '../data/curriculum';
 import type { GradeId, PlayerProfile } from '../types';
 import { AvatarDisplay } from './AvatarDisplay';
@@ -7,7 +7,6 @@ import {
   Award,
   BarChart3,
   BookOpen,
-  Database,
   Download,
   Lock,
   RefreshCw,
@@ -45,22 +44,9 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [syncing, setSyncing] = useState(false);
-  const [dbStatus, setDbStatus] = useState<{
-    ok: boolean;
-    host?: string;
-    database?: string;
-  } | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [gradeFilter, setGradeFilter] = useState<GradeId | 'all'>('all');
-
-  useEffect(() => {
-    if (!unlocked) return;
-    fetch('/api/health')
-      .then((r) => r.json())
-      .then((d) => setDbStatus(d))
-      .catch(() => setDbStatus({ ok: false }));
-  }, [unlocked]);
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,9 +67,6 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
     setSyncing(true);
     try {
       await onRefreshFromCloud();
-      const r = await fetch('/api/health');
-      const d = await r.json();
-      setDbStatus(d);
     } catch {
       // ignore
     } finally {
@@ -271,25 +254,9 @@ export const AdminAnalyticsModal: React.FC<AdminAnalyticsModalProps> = ({
               <ShieldCheck className="h-6 w-6 text-emerald-400" />
             </div>
             <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
-                  Kintin Lingo — Admin Analytics
-                </h2>
-                {dbStatus && (
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                      dbStatus.ok
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}
-                  >
-                    <Database className="h-3 w-3" />
-                    {dbStatus.ok
-                      ? `MySQL: ${dbStatus.database} (${dbStatus.host})`
-                      : 'Local Storage Mode'}
-                  </span>
-                )}
-              </div>
+              <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
+                Kintin Lingo — Admin Analytics
+              </h2>
               <p className="text-xs text-slate-500">
                 แดชบอร์ดวิเคราะห์ผลการเรียนรู้ของผู้เล่นทั้งหมด อ.1 – ป.6
               </p>
