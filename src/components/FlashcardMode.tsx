@@ -91,12 +91,13 @@ export const FlashcardMode: React.FC<FlashcardModeProps> = ({
         className="animate-card-pop rounded-3xl border-2 border-slate-200 bg-white/95 p-6 text-center shadow-xl backdrop-blur-md sm:p-10"
       >
         <HoloStage3D
+          word={word.word}
           emoji={word.emoji}
           onTap={() => speakEnglish(word.word, ageGroup)}
         />
         <div className="mb-3 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-600">
           <Volume2 className="h-3.5 w-3.5" />
-          แตะโฮโลแกรม 3D เพื่อหมุน & ฟังเสียง
+          แตะที่รูปภาพเพื่อฟังเสียง
         </div>
 
         {!isKindergarten && (
