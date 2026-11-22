@@ -19,12 +19,23 @@ export function createDefaultProgress(
   };
 }
 
+export function generateFriendCode(): string {
+  const num = Math.floor(1000 + Math.random() * 9000);
+  return `KL-${num}`;
+}
+
 export function loadPlayers(): PlayerProfile[] {
   try {
     const raw = localStorage.getItem(PLAYERS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as PlayerProfile[];
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.map((p) => ({
+          ...p,
+          friendCode: p.friendCode || generateFriendCode(),
+          friends: p.friends ?? [],
+        }));
+      }
     }
 
     // Migrate legacy single-player progress if present
@@ -71,10 +82,12 @@ export function createNewPlayer(params: {
   const cleanPin = params.pin?.trim();
   return {
     id: `player-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    friendCode: generateFriendCode(),
     name: params.name.trim(),
     avatar: params.avatar,
     pin: cleanPin ? cleanPin : undefined,
     progress: createDefaultProgress(params.grade, params.avatar),
+    friends: [],
     createdAt: new Date().toISOString(),
   };
 }

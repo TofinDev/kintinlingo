@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { ALL_WORDS_MAP, CURRICULUM } from './data/curriculum';
-import type { GradeId, Lesson, PlayerProfile, UserProgress, VocabWord } from './types';
+import type { FriendEntry, GradeId, Lesson, PlayerProfile, UserProgress, VocabWord } from './types';
 import { createNewPlayer, loadPlayers, savePlayers } from './utils/storage';
 import { PlayerLogin } from './components/PlayerLogin';
 import { GradeSelector } from './components/GradeSelector';
@@ -13,7 +13,7 @@ import {
   saveVoiceSettings,
   type VoiceSettings,
 } from './utils/speech';
-import { BarChart3, GraduationCap, LogOut, QrCode, Star, Trophy, Volume2 } from 'lucide-react';
+import { BarChart3, GraduationCap, LogOut, QrCode, Star, Trophy, Users, Volume2 } from 'lucide-react';
 
 const Background3D = lazy(() =>
   import('./components/Background3D').then((m) => ({ default: m.Background3D }))
@@ -49,6 +49,10 @@ const VsBattleMode = lazy(() =>
   import('./components/VsBattleMode').then((m) => ({ default: m.VsBattleMode }))
 );
 import { decodeVsChallenge, type VsOpponent } from './components/VsBattleMode';
+const FriendsModal = lazy(() =>
+  import('./components/FriendsModal').then((m) => ({ default: m.FriendsModal }))
+);
+import { decodeFriendInvite } from './components/FriendsModal';
 
 type ViewMode =
   | 'login'
@@ -72,6 +76,12 @@ export function App() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [pendingFriendInvite, setPendingFriendInvite] = useState<FriendEntry | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const fParam = new URLSearchParams(window.location.search).get('addfriend');
+    return fParam ? decodeFriendInvite(fParam) : null;
+  });
   const [pendingChallenge, setPendingChallenge] = useState<VsOpponent | null>(() => {
     if (typeof window === 'undefined') return null;
     const vsParam = new URLSearchParams(window.location.search).get('vs');
@@ -234,6 +244,36 @@ export function App() {
     [updateActiveProgress]
   );
 
+  const handleAddFriend = useCallback(
+    (friend: FriendEntry) => {
+      if (!activePlayerId) return;
+      playTone('correct');
+      setPlayers((prevPlayers) =>
+        prevPlayers.map((p) => {
+          if (p.id !== activePlayerId) return p;
+          const existing = p.friends ?? [];
+          if (existing.some((f) => f.id === friend.id)) return p;
+          return { ...p, friends: [...existing, friend] };
+        })
+      );
+    },
+    [activePlayerId]
+  );
+
+  const handleRemoveFriend = useCallback(
+    (friendId: string) => {
+      if (!activePlayerId) return;
+      setPlayers((prevPlayers) =>
+        prevPlayers.map((p) =>
+          p.id === activePlayerId
+            ? { ...p, friends: (p.friends ?? []).filter((f) => f.id !== friendId) }
+            : p
+        )
+      );
+    },
+    [activePlayerId]
+  );
+
   return (
     <div className="relative min-h-screen bg-transparent pb-12">
       <Suspense fallback={null}>
@@ -271,16 +311,29 @@ export function App() {
               <span className="hidden sm:inline">อันดับ</span>
             </button>
 
-            {/* Vocab Analysis Button (when logged in) */}
+            {/* Vocab Analysis & Friends Buttons (when logged in) */}
             {activePlayer && (
-              <button
-                onClick={() => setShowAnalysis(true)}
-                className="flex items-center gap-1.5 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 shadow-xs transition hover:bg-indigo-100 sm:text-sm"
-                title="วิเคราะห์แนวคำศัพท์และหมวดที่ควรเพิ่ม"
-              >
-                <BarChart3 className="h-4 w-4 text-indigo-600" />
-                <span className="hidden sm:inline">วิเคราะห์</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setShowFriendsModal(true)}
+                  className="flex items-center gap-1.5 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 shadow-xs transition hover:bg-emerald-100 sm:text-sm"
+                  title="เพื่อน (Friends)"
+                >
+                  <Users className="h-4 w-4 text-emerald-600" />
+                  <span className="hidden sm:inline">
+                    เพื่อน ({(activePlayer.friends ?? []).length})
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setShowAnalysis(true)}
+                  className="flex items-center gap-1.5 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 shadow-xs transition hover:bg-indigo-100 sm:text-sm"
+                  title="วิเคราะห์แนวคำศัพท์และหมวดที่ควรเพิ่ม"
+                >
+                  <BarChart3 className="h-4 w-4 text-indigo-600" />
+                  <span className="hidden sm:inline">วิเคราะห์</span>
+                </button>
+              </>
             )}
 
             {/* QR Code Share Button */}
@@ -394,7 +447,62 @@ export function App() {
         )}
 
         {showQrModal && <ShareQrModal onClose={() => setShowQrModal(false)} />}
+
+        {showFriendsModal && activePlayer && (
+          <FriendsModal
+            currentPlayer={activePlayer}
+            allPlayers={players}
+            onAddFriend={handleAddFriend}
+            onRemoveFriend={handleRemoveFriend}
+            onChallengeFriend={(f) => {
+              setPendingChallenge({
+                id: f.id,
+                name: f.name,
+                avatar: f.avatar,
+                gradeId: f.gradeId,
+                targetScore: Math.max(60, f.stars * 12),
+                isOnlineChallenge: true,
+              });
+              setView('vs');
+            }}
+            onClose={() => setShowFriendsModal(false)}
+          />
+        )}
       </Suspense>
+
+      {/* Incoming Friend Invite Banner (when opened via ?addfriend=...) */}
+      {pendingFriendInvite && activePlayer && pendingFriendInvite.id !== activePlayer.id && (
+        <div className="mx-auto mt-4 max-w-xl px-4">
+          <div className="animate-card-pop flex items-center justify-between gap-3 rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-4 shadow-md">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">{pendingFriendInvite.avatar}</span>
+              <div>
+                <div className="text-sm font-bold text-emerald-950">
+                  🤝 {pendingFriendInvite.name} ({pendingFriendInvite.friendCode}) ชวนคุณเป็นเพื่อน!
+                </div>
+                <div className="text-xs text-emerald-700">กดยอมรับเพื่อเพิ่มเข้าลิสต์เพื่อนเลย</div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  handleAddFriend(pendingFriendInvite);
+                  setPendingFriendInvite(null);
+                }}
+                className="rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow hover:bg-emerald-700"
+              >
+                ยอมรับ
+              </button>
+              <button
+                onClick={() => setPendingFriendInvite(null)}
+                className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-500 ring-1 ring-slate-200"
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content with Game Loader */}
       <main key={view} className="animate-page-enter">

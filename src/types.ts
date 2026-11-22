@@ -55,11 +55,23 @@ export interface UserProgress {
   wrongWords: string[];
 }
 
+export interface FriendEntry {
+  id: string;
+  friendCode: string;
+  name: string;
+  avatar: string;
+  gradeId: GradeId;
+  stars: number;
+  addedAt: string;
+}
+
 export interface PlayerProfile {
   id: string;
+  friendCode?: string;
   name: string;
   avatar: string;
   pin?: string;
   progress: UserProgress;
+  friends?: FriendEntry[];
   createdAt: string;
 }
