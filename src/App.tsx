@@ -14,7 +14,7 @@ import {
   saveVoiceSettings,
   type VoiceSettings,
 } from './utils/speech';
-import { BarChart3, GraduationCap, LogOut, Star, Trophy, Volume2 } from 'lucide-react';
+import { BarChart3, GraduationCap, LogOut, QrCode, Star, Trophy, Volume2 } from 'lucide-react';
 
 const Background3D = lazy(() =>
   import('./components/Background3D').then((m) => ({ default: m.Background3D }))
@@ -40,6 +40,9 @@ const LeaderboardModal = lazy(() =>
 const VocabAnalysisModal = lazy(() =>
   import('./components/VocabAnalysisModal').then((m) => ({ default: m.VocabAnalysisModal }))
 );
+const ShareQrModal = lazy(() =>
+  import('./components/ShareQrModal').then((m) => ({ default: m.ShareQrModal }))
+);
 
 type ViewMode =
   | 'login'
@@ -61,6 +64,7 @@ export function App() {
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   const handleVoiceChange = (next: VoiceSettings) => {
     setVoiceSettings(next);
@@ -267,6 +271,16 @@ export function App() {
               </button>
             )}
 
+            {/* QR Code Share Button */}
+            <button
+              onClick={() => setShowQrModal(true)}
+              className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs transition hover:border-indigo-300 hover:bg-indigo-50 sm:text-sm"
+              title="สแกน QR Code เพื่อเปิดบนมือถือ"
+            >
+              <QrCode className="h-4 w-4 text-indigo-600" />
+              <span className="hidden sm:inline">QR Code</span>
+            </button>
+
             {/* Voice Selector Button */}
             <button
               onClick={() => setShowVoiceModal(true)}
@@ -366,6 +380,8 @@ export function App() {
             onClose={() => setShowVoiceModal(false)}
           />
         )}
+
+        {showQrModal && <ShareQrModal onClose={() => setShowQrModal(false)} />}
       </Suspense>
 
       {/* Main Content with Game Loader */}
