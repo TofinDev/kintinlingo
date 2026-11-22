@@ -91,3 +91,40 @@ export function createNewPlayer(params: {
     createdAt: new Date().toISOString(),
   };
 }
+
+export async function fetchCloudPlayers(): Promise<PlayerProfile[] | null> {
+  try {
+    const res = await fetch('/api/players');
+    if (!res.ok) return null;
+    const data = (await res.json()) as { ok?: boolean; players?: PlayerProfile[] };
+    if (data.ok && Array.isArray(data.players)) {
+      return data.players;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function syncPlayerToCloud(player: PlayerProfile): Promise<boolean> {
+  try {
+    const res = await fetch('/api/players', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ player }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteCloudPlayer(playerId: string): Promise<void> {
+  try {
+    await fetch(`/api/players?id=${encodeURIComponent(playerId)}`, {
+      method: 'DELETE',
+    });
+  } catch {
+    // ignore
+  }
+}

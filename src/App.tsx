@@ -1,7 +1,14 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { ALL_WORDS_MAP, CURRICULUM } from './data/curriculum';
 import type { FriendEntry, GradeId, Lesson, PlayerProfile, UserProgress, VocabWord } from './types';
-import { createNewPlayer, loadPlayers, savePlayers } from './utils/storage';
+import {
+  createNewPlayer,
+  deleteCloudPlayer,
+  fetchCloudPlayers,
+  loadPlayers,
+  savePlayers,
+  syncPlayerToCloud,
+} from './utils/storage';
 import { PlayerLogin } from './components/PlayerLogin';
 import { GradeSelector } from './components/GradeSelector';
 import { AvatarDisplay } from './components/AvatarDisplay';
@@ -97,6 +104,28 @@ export function App() {
     savePlayers(players);
   }, [players]);
 
+  // Fetch players from MySQL backend on startup (if configured)
+  useEffect(() => {
+    let mounted = true;
+    fetchCloudPlayers().then((cloudPlayers) => {
+      if (!mounted || !cloudPlayers || cloudPlayers.length === 0) return;
+      setPlayers((localPlayers) => {
+        const merged = new Map<string, PlayerProfile>();
+        localPlayers.forEach((p) => merged.set(p.id, p));
+        cloudPlayers.forEach((cp) => {
+          const existing = merged.get(cp.id);
+          if (!existing || cp.progress.stars >= existing.progress.stars) {
+            merged.set(cp.id, cp);
+          }
+        });
+        return Array.from(merged.values());
+      });
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const activePlayer = useMemo(
     () => players.find((p) => p.id === activePlayerId) ?? null,
     [players, activePlayerId]
@@ -127,9 +156,12 @@ export function App() {
     (updater: (prev: UserProgress) => UserProgress) => {
       if (!activePlayerId) return;
       setPlayers((prevPlayers) =>
-        prevPlayers.map((p) =>
-          p.id === activePlayerId ? { ...p, progress: updater(p.progress) } : p
-        )
+        prevPlayers.map((p) => {
+          if (p.id !== activePlayerId) return p;
+          const updated = { ...p, progress: updater(p.progress) };
+          void syncPlayerToCloud(updated);
+          return updated;
+        })
       );
     },
     [activePlayerId]
@@ -158,11 +190,13 @@ export function App() {
   }) => {
     const created = createNewPlayer(params);
     setPlayers((prev) => [...prev, created]);
+    void syncPlayerToCloud(created);
     triggerEnterAnimation(created);
   };
 
   const handleDeletePlayer = (playerId: string) => {
     setPlayers((prev) => prev.filter((p) => p.id !== playerId));
+    void deleteCloudPlayer(playerId);
     if (activePlayerId === playerId) {
       setActivePlayerId(null);
       setView('login');
@@ -253,7 +287,9 @@ export function App() {
           if (p.id !== activePlayerId) return p;
           const existing = p.friends ?? [];
           if (existing.some((f) => f.id === friend.id)) return p;
-          return { ...p, friends: [...existing, friend] };
+          const updated = { ...p, friends: [...existing, friend] };
+          void syncPlayerToCloud(updated);
+          return updated;
         })
       );
     },
@@ -264,11 +300,15 @@ export function App() {
     (friendId: string) => {
       if (!activePlayerId) return;
       setPlayers((prevPlayers) =>
-        prevPlayers.map((p) =>
-          p.id === activePlayerId
-            ? { ...p, friends: (p.friends ?? []).filter((f) => f.id !== friendId) }
-            : p
-        )
+        prevPlayers.map((p) => {
+          if (p.id !== activePlayerId) return p;
+          const updated = {
+            ...p,
+            friends: (p.friends ?? []).filter((f) => f.id !== friendId),
+          };
+          void syncPlayerToCloud(updated);
+          return updated;
+        })
       );
     },
     [activePlayerId]
