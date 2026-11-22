@@ -344,7 +344,7 @@ export function App() {
             </div>
             <div>
               <div className="font-en text-lg font-bold leading-tight text-slate-900">
-                Kintin <span className="text-indigo-600">Kids</span>
+                Kintin <span className="text-indigo-600">Word</span>
               </div>
               <div className="text-[11px] font-medium text-slate-500">
                 ภาษาอังกฤษ อ.1 – ป.6

@@ -43,13 +43,13 @@ export const VoiceSelectorModal: React.FC<VoiceSelectorModalProps> = ({
   const handleSelectPreset = (preset: Exclude<VoicePreset, 'custom'>) => {
     const next: VoiceSettings = { preset };
     onChange(next);
-    speakEnglish('Hello! Welcome to Kintin Kids!', ageGroup, next);
+    speakEnglish('Hello! Welcome to Kintin Word!', ageGroup, next);
   };
 
   const handleSelectCustomVoice = (voiceName: string) => {
     const next: VoiceSettings = { preset: 'custom', customVoiceName: voiceName };
     onChange(next);
-    speakEnglish('Hello! Welcome to Kintin Kids!', ageGroup, next);
+    speakEnglish('Hello! Welcome to Kintin Word!', ageGroup, next);
   };
 
   return (
