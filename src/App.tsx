@@ -1,17 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { ALL_WORDS_MAP, CURRICULUM } from './data/curriculum';
 import type { GradeId, Lesson, PlayerProfile, UserProgress, VocabWord } from './types';
 import { createNewPlayer, loadPlayers, savePlayers } from './utils/storage';
 import { PlayerLogin } from './components/PlayerLogin';
 import { GradeSelector } from './components/GradeSelector';
 import { LessonMap } from './components/LessonMap';
-import { FlashcardMode } from './components/FlashcardMode';
-import { QuizMode } from './components/QuizMode';
 import { AvatarDisplay } from './components/AvatarDisplay';
-import { Background3D } from './components/Background3D';
-import { VoiceSelectorModal } from './components/VoiceSelectorModal';
-import { LeaderboardModal } from './components/LeaderboardModal';
-import { VocabAnalysisModal } from './components/VocabAnalysisModal';
+import { GameLoader } from './components/GameLoader';
 import {
   getPresetLabel,
   getVoiceSettings,
@@ -21,7 +16,40 @@ import {
 } from './utils/speech';
 import { BarChart3, GraduationCap, LogOut, Star, Trophy, Volume2 } from 'lucide-react';
 
-type ViewMode = 'login' | 'grade_select' | 'map' | 'learn' | 'quiz' | 'review';
+const Background3D = lazy(() =>
+  import('./components/Background3D').then((m) => ({ default: m.Background3D }))
+);
+const FlashcardMode = lazy(() =>
+  import('./components/FlashcardMode').then((m) => ({ default: m.FlashcardMode }))
+);
+const QuizMode = lazy(() =>
+  import('./components/QuizMode').then((m) => ({ default: m.QuizMode }))
+);
+const MemoryMatchGame = lazy(() =>
+  import('./components/MemoryMatchGame').then((m) => ({ default: m.MemoryMatchGame }))
+);
+const SpeedGame = lazy(() =>
+  import('./components/SpeedGame').then((m) => ({ default: m.SpeedGame }))
+);
+const VoiceSelectorModal = lazy(() =>
+  import('./components/VoiceSelectorModal').then((m) => ({ default: m.VoiceSelectorModal }))
+);
+const LeaderboardModal = lazy(() =>
+  import('./components/LeaderboardModal').then((m) => ({ default: m.LeaderboardModal }))
+);
+const VocabAnalysisModal = lazy(() =>
+  import('./components/VocabAnalysisModal').then((m) => ({ default: m.VocabAnalysisModal }))
+);
+
+type ViewMode =
+  | 'login'
+  | 'grade_select'
+  | 'map'
+  | 'learn'
+  | 'quiz'
+  | 'memory'
+  | 'speed'
+  | 'review';
 
 export function App() {
   const [players, setPlayers] = useState<PlayerProfile[]>(() => loadPlayers());
@@ -179,9 +207,23 @@ export function App() {
     });
   };
 
+  const handleArcadeComplete = useCallback(
+    (starsEarned: number, learnedIds: string[]) => {
+      updateActiveProgress((prev) => ({
+        ...prev,
+        stars: prev.stars + starsEarned,
+        learnedWords: Array.from(new Set([...prev.learnedWords, ...learnedIds])),
+      }));
+    },
+    [updateActiveProgress]
+  );
+
   return (
     <div className="relative min-h-screen bg-transparent pb-12">
-      <Background3D ageGroup={activePlayer ? currentGrade.ageGroup : 'kindergarten'} />
+      <Suspense fallback={null}>
+        <Background3D ageGroup={activePlayer ? currentGrade.ageGroup : 'kindergarten'} />
+      </Suspense>
+
       {/* Global Header */}
       <header className="sticky top-0 z-30 border-b border-white/60 bg-white/75 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3">
@@ -225,7 +267,7 @@ export function App() {
               </button>
             )}
 
-            {/* Voice Selector Button (always accessible) */}
+            {/* Voice Selector Button */}
             <button
               onClick={() => setShowVoiceModal(true)}
               className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs transition hover:border-indigo-300 hover:bg-indigo-50 sm:text-sm"
@@ -237,7 +279,6 @@ export function App() {
 
             {activePlayer && progress && (
               <>
-                {/* Active Player + Switch Player */}
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 sm:text-sm"
@@ -255,7 +296,6 @@ export function App() {
                   <LogOut className="h-3.5 w-3.5 text-slate-400" />
                 </button>
 
-                {/* Grade Switcher */}
                 <button
                   onClick={() => setView('grade_select')}
                   className="rounded-2xl border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 transition hover:bg-indigo-100 sm:text-sm"
@@ -264,7 +304,6 @@ export function App() {
                   {currentGrade.shortName}
                 </button>
 
-                {/* Stars Counter */}
                 <div className="flex items-center gap-1 rounded-2xl bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 ring-1 ring-amber-200 sm:text-sm">
                   <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
                   <span>{progress.stars}</span>
@@ -297,107 +336,131 @@ export function App() {
         </div>
       )}
 
-      {/* Vocab Analysis Modal */}
-      {showAnalysis && activePlayer && (
-        <VocabAnalysisModal
-          player={activePlayer}
-          currentGrade={currentGrade}
-          onSelectLesson={(lesson) => {
-            setActiveLesson(lesson);
-            setView('learn');
-          }}
-          onClose={() => setShowAnalysis(false)}
-        />
-      )}
-
-      {/* Leaderboard Modal */}
-      {showLeaderboard && (
-        <LeaderboardModal
-          players={players}
-          activePlayerId={activePlayerId}
-          onClose={() => setShowLeaderboard(false)}
-        />
-      )}
-
-      {/* Voice Selector Modal */}
-      {showVoiceModal && (
-        <VoiceSelectorModal
-          settings={voiceSettings}
-          ageGroup={activePlayer ? currentGrade.ageGroup : 'kindergarten'}
-          onChange={handleVoiceChange}
-          onClose={() => setShowVoiceModal(false)}
-        />
-      )}
-
-      {/* Main Content */}
-      <main key={view} className="animate-page-enter">
-        {(view === 'login' || !activePlayer || !progress) && (
-          <PlayerLogin
-            players={players}
-            onLogin={handleLogin}
-            onCreatePlayer={handleCreatePlayer}
-            onDeletePlayer={handleDeletePlayer}
-          />
-        )}
-
-        {activePlayer && progress && view === 'grade_select' && (
-          <GradeSelector
-            selectedGrade={progress.selectedGrade}
-            selectedAvatar={progress.avatar}
-            onSelectGrade={handleSelectGrade}
-            onSelectAvatar={handleSelectAvatar}
-            onClose={() => setView('map')}
-          />
-        )}
-
-        {activePlayer && progress && view === 'map' && (
-          <LessonMap
-            grade={currentGrade}
-            progress={progress}
-            onStartLearn={(lesson) => {
+      {/* Lazy Modals */}
+      <Suspense fallback={null}>
+        {showAnalysis && activePlayer && (
+          <VocabAnalysisModal
+            player={activePlayer}
+            currentGrade={currentGrade}
+            onSelectLesson={(lesson) => {
               setActiveLesson(lesson);
               setView('learn');
             }}
-            onStartQuiz={(lesson) => {
-              setActiveLesson(lesson);
-              setView('quiz');
-            }}
-            onStartReview={() => setView('review')}
-            onChangeGrade={() => setView('grade_select')}
+            onClose={() => setShowAnalysis(false)}
           />
         )}
 
-        {activePlayer && progress && view === 'learn' && activeLesson && (
-          <FlashcardMode
-            lesson={activeLesson}
-            ageGroup={currentGrade.ageGroup}
-            onMarkLearned={handleMarkLearned}
-            onFinishToQuiz={() => setView('quiz')}
-            onBack={() => setView('map')}
+        {showLeaderboard && (
+          <LeaderboardModal
+            players={players}
+            activePlayerId={activePlayerId}
+            onClose={() => setShowLeaderboard(false)}
           />
         )}
 
-        {activePlayer && progress && view === 'quiz' && activeLesson && (
-          <QuizMode
-            title={activeLesson.titleTh}
-            words={activeLesson.words}
-            fallbackPool={fallbackPool}
-            ageGroup={currentGrade.ageGroup}
-            onComplete={(res) => handleQuizComplete(activeLesson.id, res)}
-            onBack={() => setView('map')}
+        {showVoiceModal && (
+          <VoiceSelectorModal
+            settings={voiceSettings}
+            ageGroup={activePlayer ? currentGrade.ageGroup : 'kindergarten'}
+            onChange={handleVoiceChange}
+            onClose={() => setShowVoiceModal(false)}
           />
         )}
+      </Suspense>
 
-        {activePlayer && progress && view === 'review' && reviewWords.length > 0 && (
-          <QuizMode
-            title="ทบทวนคำศัพท์ที่เคยตอบผิด"
-            words={reviewWords}
-            fallbackPool={fallbackPool}
-            ageGroup={currentGrade.ageGroup}
-            onComplete={(res) => handleQuizComplete(null, res)}
-            onBack={() => setView('map')}
-          />
-        )}
+      {/* Main Content with Game Loader */}
+      <main key={view} className="animate-page-enter">
+        <Suspense fallback={<GameLoader />}>
+          {(view === 'login' || !activePlayer || !progress) && (
+            <PlayerLogin
+              players={players}
+              onLogin={handleLogin}
+              onCreatePlayer={handleCreatePlayer}
+              onDeletePlayer={handleDeletePlayer}
+            />
+          )}
+
+          {activePlayer && progress && view === 'grade_select' && (
+            <GradeSelector
+              selectedGrade={progress.selectedGrade}
+              selectedAvatar={progress.avatar}
+              onSelectGrade={handleSelectGrade}
+              onSelectAvatar={handleSelectAvatar}
+              onClose={() => setView('map')}
+            />
+          )}
+
+          {activePlayer && progress && view === 'map' && (
+            <LessonMap
+              grade={currentGrade}
+              progress={progress}
+              onStartLearn={(lesson) => {
+                setActiveLesson(lesson);
+                setView('learn');
+              }}
+              onStartQuiz={(lesson) => {
+                setActiveLesson(lesson);
+                setView('quiz');
+              }}
+              onStartMemory={() => setView('memory')}
+              onStartSpeed={() => setView('speed')}
+              onStartReview={() => setView('review')}
+              onChangeGrade={() => setView('grade_select')}
+            />
+          )}
+
+          {activePlayer && progress && view === 'learn' && activeLesson && (
+            <FlashcardMode
+              lesson={activeLesson}
+              ageGroup={currentGrade.ageGroup}
+              onMarkLearned={handleMarkLearned}
+              onFinishToQuiz={() => setView('quiz')}
+              onBack={() => setView('map')}
+            />
+          )}
+
+          {activePlayer && progress && view === 'quiz' && activeLesson && (
+            <QuizMode
+              title={activeLesson.titleTh}
+              words={activeLesson.words}
+              fallbackPool={fallbackPool}
+              ageGroup={currentGrade.ageGroup}
+              onComplete={(res) => handleQuizComplete(activeLesson.id, res)}
+              onBack={() => setView('map')}
+            />
+          )}
+
+          {activePlayer && progress && view === 'memory' && (
+            <MemoryMatchGame
+              title={`คำศัพท์ ${currentGrade.nameTh}`}
+              words={fallbackPool}
+              ageGroup={currentGrade.ageGroup}
+              onComplete={handleArcadeComplete}
+              onBack={() => setView('map')}
+            />
+          )}
+
+          {activePlayer && progress && view === 'speed' && (
+            <SpeedGame
+              gradeName={currentGrade.shortName}
+              words={fallbackPool}
+              ageGroup={currentGrade.ageGroup}
+              onComplete={handleArcadeComplete}
+              onBack={() => setView('map')}
+            />
+          )}
+
+          {activePlayer && progress && view === 'review' && reviewWords.length > 0 && (
+            <QuizMode
+              title="ทบทวนคำศัพท์ที่เคยตอบผิด"
+              words={reviewWords}
+              fallbackPool={fallbackPool}
+              ageGroup={currentGrade.ageGroup}
+              onComplete={(res) => handleQuizComplete(null, res)}
+              onBack={() => setView('map')}
+            />
+          )}
+        </Suspense>
       </main>
     </div>
   );
