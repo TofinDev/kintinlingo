@@ -21,7 +21,7 @@ import {
   saveVoiceSettings,
   type VoiceSettings,
 } from './utils/speech';
-import { BarChart3, GraduationCap, LogOut, QrCode, Star, Trophy, Users, Volume2 } from 'lucide-react';
+import { BarChart3, Calculator, GraduationCap, LogOut, QrCode, Star, Trophy, Users, Volume2 } from 'lucide-react';
 
 const Background3D = lazy(() =>
   import('./components/Background3D').then((m) => ({ default: m.Background3D }))
@@ -67,8 +67,11 @@ const AdminAnalyticsModal = lazy(() =>
 const EggGachaModal = lazy(() =>
   import('./components/EggGachaModal').then((m) => ({ default: m.EggGachaModal }))
 );
+const KintinMathMode = lazy(() =>
+  import('./components/KintinMathMode').then((m) => ({ default: m.KintinMathMode }))
+);
 
-const APP_VERSION = 'v1.5.0';
+const APP_VERSION = 'v1.6.0';
 
 type ViewMode =
   | 'login'
@@ -79,12 +82,23 @@ type ViewMode =
   | 'memory'
   | 'speed'
   | 'vs'
+  | 'math'
   | 'review';
 
 export function App() {
   const [players, setPlayers] = useState<PlayerProfile[]>(() => loadPlayers());
   const [activePlayerId, setActivePlayerId] = useState<string | null>(null);
-  const [view, setView] = useState<ViewMode>('login');
+  const [view, setView] = useState<ViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      if (
+        window.location.pathname === '/math' ||
+        new URLSearchParams(window.location.search).get('mode') === 'math'
+      ) {
+        return 'math';
+      }
+    }
+    return 'login';
+  });
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [enteringPlayer, setEnteringPlayer] = useState<PlayerProfile | null>(null);
   const [voiceSettings, setVoiceSettings] = useState<VoiceSettings>(() => getVoiceSettings());
@@ -394,6 +408,20 @@ export function App() {
           </button>
 
           <div className="flex items-center justify-end gap-1 sm:gap-2">
+            {/* Kintin Math Mode Link Button */}
+            <button
+              onClick={() => setView(view === 'math' ? (activePlayer ? 'map' : 'login') : 'math')}
+              className={`flex items-center gap-1 rounded-xl border px-2 py-1 text-xs font-bold shadow-xs transition sm:gap-1.5 sm:rounded-2xl sm:px-3 sm:py-1.5 sm:text-sm ${
+                view === 'math'
+                  ? 'border-orange-600 bg-orange-500 text-white'
+                  : 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100'
+              }`}
+              title="Kintin Math — บวกเลข & แม่สูตรคูณ"
+            >
+              <Calculator className="h-4 w-4" />
+              <span className="font-en">Math</span>
+            </button>
+
             {/* Secondary Menu Buttons: hidden on mobile while inside a lesson/quiz to save vertical space */}
             <div
               className={`${
@@ -646,7 +674,15 @@ export function App() {
       {/* Main Content with Game Loader */}
       <main key={view} className="animate-page-enter">
         <Suspense fallback={<GameLoader />}>
-          {(view === 'login' || !activePlayer || !progress) && (
+          {view === 'math' && (
+            <KintinMathMode
+              ageGroup={activePlayer ? currentGrade.ageGroup : 'kindergarten'}
+              onComplete={(starsEarned) => handleArcadeComplete(starsEarned, [])}
+              onBackToVocab={() => setView(activePlayer ? 'map' : 'login')}
+            />
+          )}
+
+          {view !== 'math' && (view === 'login' || !activePlayer || !progress) && (
             <PlayerLogin
               players={players}
               onLogin={handleLogin}
